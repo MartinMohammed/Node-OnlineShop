@@ -3,13 +3,14 @@ const path = require("path");
 const express = require("express");
 const bodyParser = require("body-parser");
 const handlebars = require("express-handlebars");
+const mongoose = require("mongoose");
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const errorsController = require("./controllers/errors");
 
 // * ---------------------------- USING MONGODB ------------------------
-const mongoConnect = require("./util/database").mongoConnect;
+const mongooseConnect = require("./util/database").mongooseConnect;
 const User = require("./models/MongoDB/user");
 
 // ! ---------------------------- USING MYSQL ------------------------
@@ -71,20 +72,21 @@ app.use(express.static(path.join(__dirname, "public")));
 // EXECUTED FOR INCOMING REQUEST -> so only after the initialization code below / so we are guaranteed to fetch in the database
 // after a user
 app.use((req, res, next) => {
-  // ! ---------------------------- USING MYSQL ------------------------
-  // * ---------------------------- USING MONGODB ------------------------
+  // // ! ---------------------------- USING MYSQL ------------------------
+  // // * ---------------------------- USING MONGODB ------------------------
 
-  // string will be converted to ObjectId
-  User.findById("624ae4e175f617d9a6474cac")
-    .then((user) => {
-      // user will be just all the specified properties/ data from the database
-      // * NO Access to our Class Methods of User unless...
-      // extended version - all util methods are available on incoming requests by the 'dummy' user
-      req.user = new User(user.username, user.email, user.cart, user._id);
-      // continue with next step middleware
-      next();
-    })
-    .catch((err) => console.log(err));
+  // // string will be converted to ObjectId
+  // User.findById("624ae4e175f617d9a6474cac")
+  //   .then((user) => {
+  //     // user will be just all the specified properties/ data from the database
+  //     // * NO Access to our Class Methods of User unless...
+  //     // extended version - all util methods are available on incoming requests by the 'dummy' user
+  //     req.user = new User(user.username, user.email, user.cart, user._id);
+  //     // continue with next step middleware
+  //     next();
+  //   })
+  //   .catch((err) => console.log(err));
+  next();
 });
 
 // use route filtering
@@ -96,7 +98,7 @@ app.use("/", errorsController.get404);
 
 // * ---------------------------- USING MONGODB ------------------------
 // callback in the connect function
-mongoConnect(() => {
+mongooseConnect(() => {
   app.listen(3000);
 });
 

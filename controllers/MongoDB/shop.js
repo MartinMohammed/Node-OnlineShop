@@ -4,7 +4,7 @@ const User = require("../../models/MongoDB/user");
 // const Cart = require("../../models/MongoDB/cart")
 
 exports.getHomepage = (req, res, next) => {
-  Product.fetchAll()
+  Product.find()
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
@@ -17,7 +17,7 @@ exports.getHomepage = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   // static method for mongodb - returns a promise
-  Product.fetchAll()
+  Product.find()
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,

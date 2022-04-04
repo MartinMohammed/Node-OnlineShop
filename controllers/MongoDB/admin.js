@@ -1,7 +1,7 @@
 // * ---------------------------- USING MONGODB ------------------------
-const mongodb = require("mongodb");
+// const mongodb = require("mongodb");
 const Product = require("../../models/MongoDB/product");
-const ObjectId = mongodb.ObjectId;
+// const ObjectId = mongodb.ObjectId;
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -13,18 +13,13 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const { title, price, description, imageUrl } = req.body;
-  const product = new Product(
-    title,
-    price,
-    description,
-    imageUrl,
-    null,
-    // string
-    req.user._id
-  );
-
+  // * our Product schema from product.js model; map the different values we defined in our schema
+  const product = new Product({ title, price, description, imageUrl });
+  // now the product is 'eligible' to mongoose sugar syntax respectively methods
   product
+    // .save() is housemade method provided by mongoose
     .save()
+    // actually we get a promise back but mongoose still gives us a .then method
     .then((result) => {
       console.log("Created Product");
       res.redirect("/admin/products");
@@ -60,23 +55,37 @@ exports.postEditProduct = (req, res, next) => {
     description: updatedDescription,
     imageUrl: updatedImageURl,
   } = req.body;
-  // productId = string of the objectId
-  const updatedProduct = new Product(
-    updatedTitle,
-    updatedPrice,
-    updatedDescription,
-    updatedImageURl,
-    productId
-  );
-  // if id is defined (it is), it will update the corresponding item in the database
-  // with the new one
-  updatedProduct.save();
-  res.redirect("/admin/products");
+  // // productId = string of the objectId
+  // const updatedProduct = new Product(
+  //   updatedTitle,
+  //   updatedPrice,
+  //   updatedDescription,
+  //   updatedImageURl,
+  //   productId
+  // );
+  // full mongoose object with its methods / not normal js object
+  Product.findById(productId)
+    .then((product) => {
+      // modifying data of product from db
+      product.title = updatedTitle;
+      product.price = updatedPrice;
+      product.description = updatedDescription;
+      product.imageUrl = updatedImageURl;
+      // saving it back into db = updated behind the scenes
+      return product.save();
+    })
+    .then((result) => {
+      // // if id is defined (it is), it will update the corresponding item in the database
+      // // with the new one
+      // updatedProduct.save();
+      res.redirect("/admin/products");
+    })
+    .catch((err) => console.log(err));
 };
 
 exports.postDeleteProduct = (req, res, next) => {
   const productId = req.body.productId;
-  Product.deleteById(productId)
+  Product.findOneAndRemove(productId)
     .then(() => {
       res.redirect("/admin/products");
     })
@@ -86,7 +95,8 @@ exports.postDeleteProduct = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  Product.fetchAll()
+  // * .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
+  Product.find({})
     .then((products) => {
       res.render("admin/products", {
         path: "/admin/products",
