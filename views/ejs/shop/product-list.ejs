@@ -27,7 +27,7 @@
                                     </p>
                                 </div>
                                 <div class="card__actions">
-                                    <a href="/products/<%=product.id%>" class="btn">Details</a>
+                                    <a href="/products/<%=product._id%>" class="btn">Details</a>
                                     <!-- it will not automatically take the product object as argument so we have to pass it manually when it is inside a loop  -->
                                     <%- include("../includes/add-to-cart.ejs", {product: product}) %>
                                 </div>

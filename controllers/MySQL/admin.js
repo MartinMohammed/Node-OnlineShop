@@ -1,7 +1,7 @@
 // ----------------- ADMIN PANEL - CONTROLLER ---------------------
-
-const Product = require("../models/product");
-const Cart = require("../models/cart");
+// ! ---------------------------- USING MYSQL ------------------------
+const Product = require("../../models/MySQL/product");
+const Cart = require("../../models/MySQL/cart");
 
 // --------------- EVERYTHING PRODUCT RELATED ------------
 
@@ -24,6 +24,7 @@ exports.postAddProduct = (req, res, next) => {
   //   products.push({ title: req.body.title });
   // create new instance of the product blue print
   // extract parsed form input of req.body
+
   const { title, imageUrl, price, description } = req.body;
   // * "Create" creates a new element based on that model and immediately saves it to the database
   // * "build" creates a new object based on the mdoel but only in js and then we need to save it manually

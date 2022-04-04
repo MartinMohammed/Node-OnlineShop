@@ -1,7 +1,8 @@
 // ----------------- USER PANEL - CONTROLLER ---------------------
+// ! ---------------------------- USING MYSQL ------------------------
 // capital because it is a class
-const Product = require("../models/product");
-const Cart = require("../models/cart");
+const Product = require("../../models/MySQL/product");
+const Cart = require("../../models/MySQL/cart");
 
 exports.getHomepage = (req, res, next) => {
   /**
