@@ -72,21 +72,23 @@ app.use(express.static(path.join(__dirname, "public")));
 // EXECUTED FOR INCOMING REQUEST -> so only after the initialization code below / so we are guaranteed to fetch in the database
 // after a user
 app.use((req, res, next) => {
-  // // ! ---------------------------- USING MYSQL ------------------------
-  // // * ---------------------------- USING MONGODB ------------------------
+  // ! ---------------------------- USING MYSQL ------------------------
+  // * ---------------------------- USING MONGODB ------------------------
+  // * ---------------------------- USING MONGOOSE ------------------------
 
-  // // string will be converted to ObjectId
-  // User.findById("624ae4e175f617d9a6474cac")
-  //   .then((user) => {
-  //     // user will be just all the specified properties/ data from the database
-  //     // * NO Access to our Class Methods of User unless...
-  //     // extended version - all util methods are available on incoming requests by the 'dummy' user
-  //     req.user = new User(user.username, user.email, user.cart, user._id);
-  //     // continue with next step middleware
-  //     next();
-  //   })
-  //   .catch((err) => console.log(err));
-  next();
+  // string will be converted to ObjectId
+  User.findById("624ca68fd700ae82bb39b758")
+    //  full mongoose model - call its methods
+    .then((user) => {
+      // user will be just all the specified properties/ data from the database
+      // * NO Access to our Class Methods of User unless...
+      // extended version - all util methods are available on incoming requests by the 'dummy' user
+      // * got methods like save(), populate(), select() ;
+      req.user = user;
+      // continue with next step middleware
+      next();
+    })
+    .catch((err) => console.log(err));
 });
 
 // use route filtering
@@ -97,8 +99,24 @@ app.use("/", shopRoutes);
 app.use("/", errorsController.get404);
 
 // * ---------------------------- USING MONGODB ------------------------
+// * Run only one time once started
 // callback in the connect function
 mongooseConnect(() => {
+  // * check if user already exists
+  // with no args = find the 1st document
+  User.findOne().then((user) => {
+    if (!user) {
+      // create a new User
+      const user = new User({
+        name: "Martin",
+        email: "Martin@gmail.com",
+        cart: {
+          items: [],
+        },
+      });
+      user.save();
+    }
+  });
   app.listen(3000);
 });
 

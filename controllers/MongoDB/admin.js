@@ -14,7 +14,14 @@ exports.getAddProduct = (req, res, next) => {
 exports.postAddProduct = (req, res, next) => {
   const { title, price, description, imageUrl } = req.body;
   // * our Product schema from product.js model; map the different values we defined in our schema
-  const product = new Product({ title, price, description, imageUrl });
+  const product = new Product({
+    title: title,
+    price: price,
+    description: description,
+    imageUrl: imageUrl,
+    // conveniently pass entire user object } mongoose pick the id from that object
+    userId: req.user,
+  });
   // now the product is 'eligible' to mongoose sugar syntax respectively methods
   product
     // .save() is housemade method provided by mongoose
@@ -96,7 +103,17 @@ exports.postDeleteProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   // * .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
-  Product.find({})
+  // comma
+  Product.find()
+    // ! ------------- SPECIAL MONGOOSE METHODS: Selection, populate
+    // //  select which kind of data should be received / (which fields to select/ unselect)
+    // // * string space seperated : '-' means exclude productId
+    // .select("title price -_id")
+    // // * tell mongoose to populate a certain filed with all the detail information and not just the id
+    // // * now userId is not just the id instead the full object / because of the ref config
+    // // * same like select can be done with populate('pathToField(nested path)', 'name')
+    // // populate related field and fetch the related data
+    // .populate("userId")
     .then((products) => {
       res.render("admin/products", {
         path: "/admin/products",

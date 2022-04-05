@@ -3,7 +3,7 @@
 // const Sequelize = require("sequelize").Sequelize;
 // const sequelize = require("../util/database");
 
-// // intermediary table between order and cart-item ?
+// // intermediary table between order awnd cart-item ?
 // const OrderItem = sequelize.define("orderItem", {
 //   id: {
 //     type: Sequelize.INTEGER,
