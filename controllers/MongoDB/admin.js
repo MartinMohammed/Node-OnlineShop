@@ -8,6 +8,7 @@ exports.getAddProduct = (req, res, next) => {
     pageTitle: "Add Product",
     path: "/admin/add-product",
     editing: false,
+    isAuthenticated: req.session.isLoggedIn,
   });
 };
 
@@ -20,7 +21,7 @@ exports.postAddProduct = (req, res, next) => {
     description: description,
     imageUrl: imageUrl,
     // conveniently pass entire user object } mongoose pick the id from that object
-    userId: req.user,
+    userId: req.session.user,
   });
   // now the product is 'eligible' to mongoose sugar syntax respectively methods
   product
@@ -49,6 +50,7 @@ exports.getEditProduct = (req, res, next) => {
         path: "/admin/edit-product",
         editing: true,
         product,
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -62,16 +64,9 @@ exports.postEditProduct = (req, res, next) => {
     description: updatedDescription,
     imageUrl: updatedImageURl,
   } = req.body;
-  // // productId = string of the objectId
-  // const updatedProduct = new Product(
-  //   updatedTitle,
-  //   updatedPrice,
-  //   updatedDescription,
-  //   updatedImageURl,
-  //   productId
-  // );
-  // full mongoose object with its methods / not normal js object
+
   Product.findById(productId)
+    // * full mongoose object with its methods / not normal js object
     .then((product) => {
       // modifying data of product from db
       product.title = updatedTitle;
@@ -103,9 +98,8 @@ exports.postDeleteProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   // * .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
-  // comma
   Product.find()
-    // ! ------------- SPECIAL MONGOOSE METHODS: Selection, populate
+    // ! ------------- SPECIAL MONGOOSE METHODS: Selection(give only particular fields), populate(insert document)
     // //  select which kind of data should be received / (which fields to select/ unselect)
     // // * string space seperated : '-' means exclude productId
     // .select("title price -_id")
@@ -119,6 +113,7 @@ exports.getProducts = (req, res, next) => {
         path: "/admin/products",
         pageTitle: "Admin Panel - Products",
         prods: products,
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));

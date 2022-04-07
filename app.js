@@ -4,14 +4,21 @@ const express = require("express");
 const bodyParser = require("body-parser");
 const handlebars = require("express-handlebars");
 const mongoose = require("mongoose");
+// session middleware
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
+const authRoutes = require("./routes/auth");
 const errorsController = require("./controllers/errors");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
 const User = require("./models/MongoDB/user");
+
+const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
+const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
 
 // ! ---------------------------- USING MYSQL ------------------------
 // const sequilize = require("./util/database");
@@ -24,6 +31,13 @@ const User = require("./models/MongoDB/user");
 // const OrderItem = require("./models/order-item");
 
 const app = express();
+// * initialize new mongodb store for sessions / use same database: shop
+const sessionStore = new MongoDBStore({
+  // uri - connection string / which database sever to store data
+  uri: MONGO_URI,
+  collection: "sessions",
+  // when sessions should be expired and cleaned up by mongodb auto.
+});
 
 // set global configuration value on our express application (keys, config items) -> can be accessed with app.get();
 // reserved keys --> views (dir to dynamic views - default = /views) & views engine -> tell express for any dynnmaic templates trying to render
@@ -64,36 +78,75 @@ if (CURRENT_VIEW_ENGINE === "hbs") {
   // pug built-in express upport => auto register with express
   // after slash which view engine we want to use
 }
-
+// -------------- MIDDLEWARE SETUP BY PACKAGES ----------
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
+/* * configuration /
+ * secret: used for signing the HASH which secretly stores our ID in the cookie / key for encrypting cookies
+ * resafe: session will not be saved on every request that is done, so on every response that is sent
+ *  but only if something changed in the session => improve perfomance
+ * saveUnitialized: no session gets saved for a request where it doesn't need to be saved because nothing was changed about it
+ * cookie: configuration for session cookie like Max-Age; Http-Only; Expires
+ */
+app.use(
+  session({
+    secret: "my secret",
+    resave: false,
+    saveUninitialized: false,
+    store: sessionStore,
+  })
+);
 
+// * register middleware for each incoming request / survive cross request because of the session / cookie
+// it will have session data loaded / if no session was found session object by default
+app.use((req, res, next) => {
+  // if we have an active session
+  if (req.session.user) {
+    // we need mongoose model to work with - methods
+    User.findById(req.session.user._id)
+      .then((user) => {
+        // now mongoose model / instance of it
+        req.user = user;
+        next();
+      })
+      .catch((err) => console.log(err));
+  } else {
+    // next middleware / routes
+    return next();
+  }
+});
 // REGISTER A NEW MIDDLEWARE -> STORE THAT USER IN REQUEST to use it anywhere in app
 // EXECUTED FOR INCOMING REQUEST -> so only after the initialization code below / so we are guaranteed to fetch in the database
 // after a user
-app.use((req, res, next) => {
-  // ! ---------------------------- USING MYSQL ------------------------
-  // * ---------------------------- USING MONGODB ------------------------
-  // * ---------------------------- USING MONGOOSE ------------------------
 
-  // string will be converted to ObjectId
-  User.findById("624ca68fd700ae82bb39b758")
-    //  full mongoose model - call its methods
-    .then((user) => {
-      // user will be just all the specified properties/ data from the database
-      // * NO Access to our Class Methods of User unless...
-      // extended version - all util methods are available on incoming requests by the 'dummy' user
-      // * got methods like save(), populate(), select() ;
-      req.user = user;
-      // continue with next step middleware
-      next();
-    })
-    .catch((err) => console.log(err));
-});
+// ! --------------- A USER SHOULD BE NOT SAVED FOR EVERY INCOMING REQUEST INSTEAD USE SESSIONS -------------
+// // * THIS RUNS FOR EVERY REQUEST THAT IS WHY WE CAN ACCESS req.user later in a router handler
+// // * because it is the same request object
+// app.use((req, res, next) => {
+//   // ! ---------------------------- USING MYSQL ------------------------
+//   // * ---------------------------- USING MONGODB ------------------------
+//   // * ---------------------------- USING MONGOOSE ------------------------
+
+//   // string will be converted to ObjectId
+//   User.findById("624ca68fd700ae82bb39b758")
+//     //  full mongoose model - call its methods
+//     .then((user) => {
+//       // user will be just all the specified properties/ data from the database
+//       // * NO Access to our Class Methods of User unless...
+//       // extended version - all util methods are available on incoming requests by the 'dummy' user
+//       // * got methods like save(), populate(), select() ;
+//       req.user = user;
+//       // continue with next step middleware
+//       next();
+//     })
+//     .catch((err) => console.log(err));
+// });
 
 // use route filtering
 app.use("/admin", adminRoutes);
 app.use("/", shopRoutes);
+// every request will go there when it is not found in the shop Routes
+app.use("/", authRoutes);
 
 // for all http methods get/post
 app.use("/", errorsController.get404);

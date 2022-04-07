@@ -7,13 +7,13 @@ const { default: mongoose } = require("mongoose");
 // EXTRACT MONGO CLIENT CONSTRUCTOR
 const MongoClient = mongodb.MongoClient;
 const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
-const MONGO_URL = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
+const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
 
 // * ---------------- USING MONGOOSE ----------------
 // set up a connection / mongoose will manage the once connection behind the sences for us
 const mongooseConnect = (cb) => {
   mongoose
-    .connect(MONGO_URL)
+    .connect(MONGO_URI)
     .then((result) => {
       // cb => app.listen(3000)
       console.log("successfully connected to database.");

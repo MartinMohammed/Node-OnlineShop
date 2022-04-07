@@ -9,21 +9,23 @@ exports.getHomepage = (req, res, next) => {
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
-        pageTitle: "Homagepage",
+        pageTitle: "Homepage",
         path: "/",
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
 };
 
 exports.getProducts = (req, res, next) => {
-  // static method for mongodb - returns a promise
+  // static method for mongodb on model - returns a promise
   Product.find()
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -37,6 +39,8 @@ exports.getProduct = (req, res, next) => {
         product: product,
         pageTitle: product.title,
         path: "/products",
+        isAuthenticated: req.session.isLoggedIn,
+
         existingDetails: product !== undefined,
       });
     })
@@ -47,9 +51,8 @@ exports.getCart = (req, res, next) => {
   // return the cart of the current user
   // populate the cartItem with its corresponding document (product)
   req.user
-    // on instance does not return a promise so we need execPopulate() to do it
     .populate("cart.items.productId")
-    // not longer available
+    // not longer available / needed
     // .execPopulate()
     .then((user) => {
       const products = user.cart.items;
@@ -57,6 +60,7 @@ exports.getCart = (req, res, next) => {
         pageTitle: "Cart",
         path: "/cart",
         products,
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -67,7 +71,7 @@ exports.postCart = (req, res, next) => {
   const prodId = req.body.productId;
   Product.findById(prodId)
     .then((product) => {
-      // * Now user (app.js) is an instance of the User class (access to its static / normal methods)
+      // *  user from app.js is an instance of the User Model (access to its static / normal methods)
       // return another promise / product is a schema instance
       // access the schema methods (which will apply for instances of the schema) just by the name
       return req.user.addToCart(product);
@@ -89,18 +93,19 @@ exports.postCartDeleteItem = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 exports.getOrders = (req, res, next) => {
-  Order.find({ "user.userId": req.user._id })
+  Order.find({ "user.userId": req.session.user._id })
     .then((orders) => {
       res.render("shop/orders", {
         path: "/orders",
         pageTitle: "Your Orders",
         orders,
+        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
 };
 exports.postOrder = (req, res, next) => {
-  // it will populate "cart.items.productId": {productData such as title...}
+  // it will populate "cart.items.productId": {productData such as title...} / insert the product (document) where the id field is
   req.user
     .populate("cart.items.productId")
     .then((user) => {
@@ -116,8 +121,8 @@ exports.postOrder = (req, res, next) => {
         // needs to get products/ userData and
         // * USERDATA
         user: {
-          name: req.user.name,
-          userId: req.user,
+          name: req.session.user.name,
+          userId: req.session.user,
         },
         // [{quantity, productId}]
         // * PRODUCTS ARRAY
