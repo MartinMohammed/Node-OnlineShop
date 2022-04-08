@@ -30,11 +30,15 @@ exports.postLogin = (req, res, next) => {
       // * now the user is available for every (accross) request object from the same window / tab -> which identifies a particular session by the session id
       // * use the session middleware
       // add any key you want
+
+      // writing to a database like mongodb can take couple of miliseconds to avoid this use .save()
       req.session.isLoggedIn = true;
-      return (req.session.user = user);
-    })
-    .then(() => {
-      res.redirect("/");
+      req.session.user = user;
+      // to be sure that the session was created before you continue
+      res.session.save((err) => {
+        console.log(err);
+        res.redirect("/");
+      });
     })
     .catch((err) => console.log(err));
 };

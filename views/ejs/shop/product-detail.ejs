@@ -17,6 +17,7 @@
                 <% }else{ %>
                     <h1>Product Details was not found.</h1>
                 <%}%>
-                <%- include("../includes/add-to-cart.ejs") %>
-            </main>
+                <% if(isAuthenticated === true){%>
+                    <%- include('../includes/add-to-cart.ejs', {product: product}) %>
+                    <% } %>            </main>
             <%- include('../includes/end.ejs') %>
