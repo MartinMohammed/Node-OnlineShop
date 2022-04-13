@@ -43,7 +43,7 @@ const productSchema = new Schema({
 // this is what we'll work with in our code. : make interaction between javascript & colleciton possible "??"
 module.exports = mongoose.model("Product", productSchema);
 
-// * ---------------------------- USING MONGODB ------------------------
+// ! ---------------------------- USING MONGODB NATIVE DRIVER ------------------------
 // const mongodb = require("mongodb");
 // const getDb = require("../../util/database").getDb;
 

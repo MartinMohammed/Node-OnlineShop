@@ -1,7 +1,7 @@
 // ------------ MANAGE AUTHENTICATION RELATED STUFF  -----------
 const express = require("express");
 
-const authController = require("./../controllers/MongoDB/auth");
+const authController = require("./../controllers/auth");
 
 const router = express.Router();
 

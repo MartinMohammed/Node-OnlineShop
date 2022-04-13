@@ -1,9 +1,9 @@
 // =============== CONTROLLER FOR "/ route" ===========
 
-const Product = require("../../models/MongoDB/product");
-const User = require("../../models/MongoDB/user");
-const Order = require("../../models/MongoDB/order");
-// const Cart = require("../../models/MongoDB/cart")
+const Product = require("../models/product");
+const User = require("../models/user");
+const Order = require("../models/order");
+// const Cart = require(../models/cart")
 
 exports.getHomepage = (req, res, next) => {
   // GET ALL THE PRODUCTS
@@ -88,7 +88,6 @@ exports.postCartDeleteItem = (req, res, next) => {
   req.user
     .removeFromCart(productId)
     .then((result) => {
-      console.log(result);
       res.redirect("/cart");
     })
     .catch((err) => console.log(err));

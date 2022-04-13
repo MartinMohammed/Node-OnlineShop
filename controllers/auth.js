@@ -1,6 +1,6 @@
 // =============== CONTROLLER FOR "/ route" ===========
 
-const User = require("../../models/MongoDB/user");
+const User = require("../models/user");
 
 // -------------- LOGIN & LOGOUT FLOW  -----------------
 exports.getLogin = (req, res, next) => {

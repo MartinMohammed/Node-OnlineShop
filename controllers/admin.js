@@ -1,6 +1,6 @@
 // =============== CONTROLLER FOR "/admin route" ===========
 
-const Product = require("../../models/MongoDB/product");
+const Product = require("../models/product");
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {

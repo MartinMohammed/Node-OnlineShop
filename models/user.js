@@ -1,7 +1,6 @@
-// * ----------------- USE MONGOOSE ----------------
+// * ----------------- USING MONGOOSE ----------------
 const res = require("express/lib/response");
 const mongoose = require("mongoose");
-const Order = require("../../models/MongoDB/order");
 
 const userSchema = new mongoose.Schema({
   /* Mongo constraints (Must have)
@@ -22,7 +21,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // EACH USER HAS A CART OF ITEMS; EACH ITEM HAS PRODUCTID THAT CAN BE RELATED / INSERTED
+  // EACH USER HAS A CART OF ITEMS; EACH ITEM HAS PRODUCTID THAT CAN BE RELATED / INSERTED } ONE-TO-ONE RELATION => legitimize embedding & refencing documents
   cart: {
     // embedded document / define an array of documents
     items: [
@@ -129,6 +128,7 @@ userSchema.methods.clearCart = function () {
 
 module.exports = mongoose.model("User", userSchema);
 
+// ! ----------------- MONGO DB NATIVE DRIVER -----------------
 // const res = require("express/lib/response");
 // const mongodb = require("mongodb");
 // const getDb = require("../../util/database").getDb;

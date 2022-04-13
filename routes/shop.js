@@ -3,7 +3,7 @@ const path = require("path");
 const express = require("express");
 
 const rootDir = require("../util/path");
-const shopController = require("../controllers/MongoDB/shop");
+const shopController = require("../controllers/shop");
 
 const router = express.Router();
 
