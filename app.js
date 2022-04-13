@@ -8,15 +8,19 @@ const mongoose = require("mongoose");
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
 
+// IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
+
+// IMPORT CONTROLLERS
 const errorsController = require("./controllers/errors");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
 const User = require("./models/MongoDB/user");
 
+// MONGO DATABASE CREDENTIALS
 const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
 const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
 
@@ -31,25 +35,28 @@ const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PAS
 // const OrderItem = require("./models/order-item");
 
 const app = express();
-// * initialize new mongodb store for sessions / use same database: shop
+
+// * INITIALIZE NEW MONGO DB STREO FOR SESSIONS / use same database: shop
 const sessionStore = new MongoDBStore({
-  // uri - connection string / which database sever to store data
+  // URI - connection string / which database sever to store data
   uri: MONGO_URI,
   collection: "sessions",
   // when sessions should be expired and cleaned up by mongodb auto.
 });
 
-// set global configuration value on our express application (keys, config items) -> can be accessed with app.get();
-// reserved keys --> views (dir to dynamic views - default = /views) & views engine -> tell express for any dynnmaic templates trying to render
-//  and there will be a special function for doing that (please use what is specified by us)
-
 // --------------------- APPLICATION CONFIGURATION ---------------------
 const VIEW_ENGINE = ["pug", "hbs", "ejs"];
 const CURRENT_VIEW_ENGINE = VIEW_ENGINE[2];
 
+/* GLOBAL CONFIGURATION - SET VIEW ENGINE 
+  VALUE on Express application (keys, config items) -> can be accessed with app.get();
+  * reserved keys --> views (dir to dynamic views - default = /views) & views engine -> tell express for any dynnmaic templates trying to render
+  and there will be a special function for doing that (please use what is specified by us)
+*/
 app.set("view engine", CURRENT_VIEW_ENGINE);
 app.set("views", `views/${CURRENT_VIEW_ENGINE}`);
 
+// MySQL
 // safer than query method
 // .catch when a promise gets rejected
 // .then when a promise gets resolved
@@ -62,32 +69,39 @@ app.set("views", `views/${CURRENT_VIEW_ENGINE}`);
 //     console.log(err);
 //   });
 
-if (CURRENT_VIEW_ENGINE === "hbs") {
-  // ------------------------ SET HANDLEBARS ----------------------------
-  // init handlebars view engine + some configuration
-  app.engine(
-    "hbs",
-    handlebars({
-      layoutsDir: "views/hbs/layouts/",
-      defaultLayout: "main-layout",
-      // only apply for main layout
-      extname: "hbs",
-    })
-  );
+// TODO: IF USE HANDLEBARS AS VIEW ENGINE UNCOMMENT THAT BLOCK
+// if (CURRENT_VIEW_ENGINE === "hbs") {
+//   // ------------------------ SET HANDLEBARS ----------------------------
+//   // init handlebars view engine + some configuration
+//   app.engine(
+//     "hbs",
+//     handlebars({
+//       layoutsDir: "views/hbs/layouts/",
+//       defaultLayout: "main-layout",
+//       // only apply for main layout
+//       extname: "hbs",
+//     })
+//   );
 
-  // pug built-in express upport => auto register with express
-  // after slash which view engine we want to use
-}
-// -------------- MIDDLEWARE SETUP BY PACKAGES ----------
+//   // pug built-in express upport => auto register with express
+//   // after slash which view engine we want to use
+// }
+
+// -------------- REGISTER MIDDLEWARE FOR EACH INCOMING REQUEST ---------------
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
-/* * configuration /
- * secret: used for signing the HASH which secretly stores our ID in the cookie / key for encrypting cookies
- * resafe: session will not be saved on every request that is done, so on every response that is sent
+
+/* SESSION CONFIGRUATION - ARGS
+ * >secret: used for signing the HASH which secretly stores our ID in the cookie / key for encrypting cookies
+ * >resafe: session will not be saved on every request that is done, so on every response that is sent
  *  but only if something changed in the session => improve perfomance
- * saveUnitialized: no session gets saved for a request where it doesn't need to be saved because nothing was changed about it
- * cookie: configuration for session cookie like Max-Age; Http-Only; Expires
+ * >saveUnitialized: no session gets saved for a request where it doesn't need to be saved because nothing was changed about it
+ * >cookie: configuration for session cookie like Max-Age; Http-Only; Expires
+ * 
+  ADVANTAGE: => each request brings a cookie => this cookie identifies a session (parsed by session middleware) => collectionData in req.session 
+  thus: now the user is available for every (accross) request object from the same window / tab -> which identifies a particular session by the session id
  */
+
 app.use(
   session({
     secret: "my secret",
@@ -97,12 +111,16 @@ app.use(
   })
 );
 
-// * register middleware for each incoming request / survive cross request because of the session / cookie
+//  ! req.user will survive cross request because the userId is stored in the sessionStore
 // it will have session data loaded / if no session was found session object by default
 app.use((req, res, next) => {
   // if we have an active session
   if (req.session.user) {
-    // we need mongoose model to work with - methods
+    /* 
+      * req.user : req object property 
+      NEED mongoose model methods to work with the document
+      STORE THAT USER IN REQUEST to use it anywhere in app
+    */
     User.findById(req.session.user._id)
       .then((user) => {
         // now mongoose model / instance of it
@@ -115,9 +133,6 @@ app.use((req, res, next) => {
     return next();
   }
 });
-// REGISTER A NEW MIDDLEWARE -> STORE THAT USER IN REQUEST to use it anywhere in app
-// EXECUTED FOR INCOMING REQUEST -> so only after the initialization code below / so we are guaranteed to fetch in the database
-// after a user
 
 // ! --------------- A USER SHOULD BE NOT SAVED FOR EVERY INCOMING REQUEST INSTEAD USE SESSIONS -------------
 // // * THIS RUNS FOR EVERY REQUEST THAT IS WHY WE CAN ACCESS req.user later in a router handler
@@ -142,9 +157,10 @@ app.use((req, res, next) => {
 //     .catch((err) => console.log(err));
 // });
 
-// use route filtering
+// ------------------ ROUTE FILTERING ---------------
 app.use("/admin", adminRoutes);
 app.use("/", shopRoutes);
+
 // every request will go there when it is not found in the shop Routes
 app.use("/", authRoutes);
 
@@ -152,29 +168,28 @@ app.use("/", authRoutes);
 app.use("/", errorsController.get404);
 
 // * ---------------------------- USING MONGODB ------------------------
-// * Run only one time once started
-// callback in the connect function
+// ONLY START WEBSERVER IF DATABASE CONNECTION IS CREATED
 mongooseConnect(() => {
-  // * check if user already exists
-  // with no args = find the 1st document
-  User.findOne().then((user) => {
-    if (!user) {
-      // create a new User
-      const user = new User({
-        name: "Martin",
-        email: "Martin@gmail.com",
-        cart: {
-          items: [],
-        },
-      });
-      user.save();
-    }
-  });
+  // ! WE'VE NOW REAL USER SIGNUP FLOW - DONT NEED TO CREATE USER MANUALLY
+  // // * check if user already exists
+  // // with no args = find the 1st document
+  // User.findOne().then((user) => {
+  //   if (!user) {
+  //     // create a new User
+  //     const user = new User({
+  //       name: "Martin",
+  //       email: "Martin@gmail.com",
+  //       cart: {
+  //         items: [],
+  //       },
+  //     });
+  //     user.save();
+  //   }
+  // });
   app.listen(3000);
 });
 
 // ! ---------------------------- USING MYSQL ------------------------
-
 // // ! ----------------------------- THIS IS WAS NPM STARTS RUN ----------------------
 // // -------- WITH THE TWO MODELS RELATED, RELATE THEM --------
 // // talking about a user created the Product = child of User

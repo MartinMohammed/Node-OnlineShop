@@ -1,7 +1,6 @@
-// * ---------------------------- USING MONGODB ------------------------
-// const mongodb = require("mongodb");
+// =============== CONTROLLER FOR "/admin route" ===========
+
 const Product = require("../../models/MongoDB/product");
-// const ObjectId = mongodb.ObjectId;
 
 exports.getAddProduct = (req, res, next) => {
   res.render("admin/edit-product", {
@@ -14,6 +13,7 @@ exports.getAddProduct = (req, res, next) => {
 
 exports.postAddProduct = (req, res, next) => {
   const { title, price, description, imageUrl } = req.body;
+
   // * our Product schema from product.js model; map the different values we defined in our schema
   const product = new Product({
     title: title,
@@ -23,7 +23,7 @@ exports.postAddProduct = (req, res, next) => {
     // conveniently pass entire user object } mongoose pick the id from that object
     userId: req.session.user,
   });
-  // now the product is 'eligible' to mongoose sugar syntax respectively methods
+  // * now the product is 'eligible' to mongoose sugar syntax respectively methods
   product
     // .save() is housemade method provided by mongoose
     .save()
@@ -37,6 +37,7 @@ exports.postAddProduct = (req, res, next) => {
     });
 };
 
+// RENDER THE ADMIN ONLY ONE PRODUCT WITH ITS DATA
 exports.getEditProduct = (req, res, next) => {
   const editMode = req.query.edit;
   if (!editMode) {
@@ -57,6 +58,7 @@ exports.getEditProduct = (req, res, next) => {
 };
 
 exports.postEditProduct = (req, res, next) => {
+  // GET THE CHANGES FROM THE FORM
   const {
     productId,
     title: updatedTitle,
@@ -65,21 +67,19 @@ exports.postEditProduct = (req, res, next) => {
     imageUrl: updatedImageURl,
   } = req.body;
 
+  // GET THE SPECIFIC PRODUCT FROM THE COLLECTION
+  // * full mongoose object with its methods / not normal js object
   Product.findById(productId)
-    // * full mongoose object with its methods / not normal js object
+    // UPDATE THE PRODUCT
     .then((product) => {
-      // modifying data of product from db
       product.title = updatedTitle;
       product.price = updatedPrice;
       product.description = updatedDescription;
       product.imageUrl = updatedImageURl;
-      // saving it back into db = updated behind the scenes
+      // saving it back into db = SAME _id = replace the old one with new one
       return product.save();
     })
     .then((result) => {
-      // // if id is defined (it is), it will update the corresponding item in the database
-      // // with the new one
-      // updatedProduct.save();
       res.redirect("/admin/products");
     })
     .catch((err) => console.log(err));

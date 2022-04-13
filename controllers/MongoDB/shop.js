@@ -1,10 +1,12 @@
-// * ---------------------------- USING MONGODB ------------------------
+// =============== CONTROLLER FOR "/ route" ===========
+
 const Product = require("../../models/MongoDB/product");
 const User = require("../../models/MongoDB/user");
 const Order = require("../../models/MongoDB/order");
 // const Cart = require("../../models/MongoDB/cart")
 
 exports.getHomepage = (req, res, next) => {
+  // GET ALL THE PRODUCTS
   Product.find()
     .then((products) => {
       res.render("shop/product-list", {
@@ -18,7 +20,7 @@ exports.getHomepage = (req, res, next) => {
 };
 
 exports.getProducts = (req, res, next) => {
-  // static method for mongodb on model - returns a promise
+  // GET ALL THE PRODUCTS
   Product.find()
     .then((products) => {
       res.render("shop/product-list", {
@@ -32,6 +34,7 @@ exports.getProducts = (req, res, next) => {
 };
 
 exports.getProduct = (req, res, next) => {
+  // GET SPECIFIC PRODUCT
   const prodId = req.params.productId;
   Product.findById(prodId)
     .then((product) => {
@@ -48,12 +51,10 @@ exports.getProduct = (req, res, next) => {
 };
 
 exports.getCart = (req, res, next) => {
-  // return the cart of the current user
-  // populate the cartItem with its corresponding document (product)
+  // RETURN THE CART OF THE GIVEN USER
+  // * populate the cartItem with its corresponding document (product)
   req.user
     .populate("cart.items.productId")
-    // not longer available / needed
-    // .execPopulate()
     .then((user) => {
       const products = user.cart.items;
       res.render("shop/cart", {
@@ -66,6 +67,7 @@ exports.getCart = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 
+// ADD PRODUCT TO THE CART
 exports.postCart = (req, res, next) => {
   // prodId from hidden input field
   const prodId = req.body.productId;
@@ -73,7 +75,6 @@ exports.postCart = (req, res, next) => {
     .then((product) => {
       // *  user from app.js is an instance of the User Model (access to its static / normal methods)
       // return another promise / product is a schema instance
-      // access the schema methods (which will apply for instances of the schema) just by the name
       return req.user.addToCart(product);
     })
     .then((result) => {
@@ -92,7 +93,10 @@ exports.postCartDeleteItem = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
+
+// GET THE ORDERS FROM THE CURRENT ACTIVE USER => SESSION
 exports.getOrders = (req, res, next) => {
+  // nested fields => path
   Order.find({ "user.userId": req.session.user._id })
     .then((orders) => {
       res.render("shop/orders", {
@@ -115,6 +119,8 @@ exports.postOrder = (req, res, next) => {
       const products = user.cart.items.map((i) => {
         // * properly object for the order model / mongoose will autoselect _id if no spread operator
         // ! with ._doc just get really access to the data and not to the bunch of metadata
+
+        // * PLEASE REFERENCE TO ORDER MODEL => productitem
         return { quantity: i.quantity, productData: { ...i.productId._doc } };
       });
       const order = new Order({
@@ -124,15 +130,14 @@ exports.postOrder = (req, res, next) => {
           name: req.session.user.name,
           userId: req.session.user,
         },
-        // [{quantity, productId}]
         // * PRODUCTS ARRAY
+        // [{quantity, productId}]
         products: products,
       });
       order.save();
     })
     .then((result) => {
       console.log("successfully placed the order");
-      // empty the cart of the user
       return req.user.clearCart();
     })
     .then(() => {

@@ -129,4 +129,8 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# additionals 
 .DS_Store
+workspace.code-workspace
+.prettierignore
+.vscode 

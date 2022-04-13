@@ -1,22 +1,24 @@
-// * ---------------------------- USING MONGODB ------------------------
+// * ---------------- USING MONGODB NATIVE DRIVER ----------------
 // ! Connect to mongodb for every operation and not disconnect } not good
 require("dotenv").config();
-const { append } = require("express/lib/response");
 const mongodb = require("mongodb");
 const { default: mongoose } = require("mongoose");
+
 // EXTRACT MONGO CLIENT CONSTRUCTOR
 const MongoClient = mongodb.MongoClient;
+
+// MONGO DATABASE CREDENTAILS
 const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
 const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
 
 // * ---------------- USING MONGOOSE ----------------
-// set up a connection / mongoose will manage the once connection behind the sences for us
+// DATABASE CONNECTION POOL - SET UP ONCE
 const mongooseConnect = (cb) => {
   mongoose
     .connect(MONGO_URI)
     .then((result) => {
-      // cb => app.listen(3000)
       console.log("successfully connected to database.");
+      // cb => app.listen(3000)
       cb();
     })
     .catch((err) => console.log(err));
@@ -56,7 +58,7 @@ exports.mongooseConnect = mongooseConnect;
 // exports.mongoConnect = mongoConnect;
 // exports.getDb = getDb;
 
-// ! ---------------------------- USING MYSQL ------------------------
+// ! ---------------------------- USING MYSQL NATIVE  ------------------------
 // // ------------ SEQUILIZE DEPENDS ON MYSQL2 PACKAGE: SO IT WILL DO ALL THE CODE BEHIND THE SCENES --------
 
 // require("dotenv").config();

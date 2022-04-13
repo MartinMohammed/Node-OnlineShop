@@ -29,16 +29,18 @@ const productSchema = new Schema({
   // userId of the creator of this product
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    // --------- relation setup -----------
-    // set special ref configuration - which model is associated/ related to the data in that field
-    // name of Model in application
+    /* REFERENCE TO OTHER MODEL: relation setup 
+    set special ref configuration - which model is associated/ related to the data in that field
+    * name of Model in application 
+    data can be population at this field later
+    */
     ref: "User",
     required: true,
   },
 });
 
-// * model is a function; important for mongoose behind the scenes to connect a schema, a blueprint with a name
-// this is what we'll work with in our code.
+// * MONGOOSE.MODEL is a function; important for mongoose behind the scenes to connect a schema, a blueprint with a name
+// this is what we'll work with in our code. : make interaction between javascript & colleciton possible "??"
 module.exports = mongoose.model("Product", productSchema);
 
 // * ---------------------------- USING MONGODB ------------------------

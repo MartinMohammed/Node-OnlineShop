@@ -2,10 +2,11 @@ const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
   user: {
-    name: {
-      type: String,
-      required: true,
-    },
+    // * DEFINE FIELDS WITH ITS "CONSTRAINTS"
+    // name: {
+    //   type: String,
+    //   required: true,
+    // },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -13,6 +14,7 @@ const orderSchema = new mongoose.Schema({
       ref: "User",
     },
   },
+  // A LIST OF PRODUCTS
   products: [
     {
       // entire other document / could be more specific defined

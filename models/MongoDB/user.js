@@ -4,25 +4,32 @@ const mongoose = require("mongoose");
 const Order = require("../../models/MongoDB/order");
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-  },
+  /* Mongo constraints (Must have)
+    * field type forEach document / constraints
+    * special types of mongoose.Schema
+      the incoming id will be just the auto added sub document objectId;
+  */
+  // TODO: CAN BE ADDED BACK LATER
+  // name: {
+  //   type: String,
+  //   required: true,
+  // },
   email: {
     type: String,
     required: true,
   },
+  password: {
+    type: String,
+    required: true,
+  },
+  // EACH USER HAS A CART OF ITEMS; EACH ITEM HAS PRODUCTID THAT CAN BE RELATED / INSERTED
   cart: {
     // embedded document / define an array of documents
     items: [
       {
-        // field typed forEach document / constraints
-        // special types of mongoose.Schema
-        // the incoming id will be just the auto added sub document objectId;
-        productId: {
-          // this will be populated on getCart;
-          // so basically the productId will hold the corresponding document
-          /* 
+        /* REFERENCE TO PRODUCT MODEL => populate 
+          * productId is the holder of the reference so it will get populated by the corresponding document
+          ! Please refer to Product schema 
           {productId: {
             _id: ,
             title: , 
@@ -30,8 +37,8 @@ const userSchema = new mongoose.Schema({
             description: , 
             imageUrl: , 
           }}
-
-          */
+        */
+        productId: {
           type: mongoose.Schema.Types.ObjectId,
           ref: "Product",
           required: true,
@@ -42,55 +49,71 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// mongoose provides as special key where we can add our own methods on the Schema
-// function must be writte like this
-// * the methods can be used on a instance of the schema
+// --------------- CUSTOM INSTANCE METHODS FOR MODIFYING THE USERS CART -------------
+// * <Schema>.methods = special key for static methods
+// -------------- ADD THE SELECTED PRODUCT INTO THE this.cart --------------
 userSchema.methods.addToCart = function (product) {
-  // this keyword should refer to schema not to something else
-  // * "this" will refer on an object / real instace based on that schem access schema props
-  // such as cart
+  // * THIS KEYWORD WILL REFER TO MODEL INSTANCE = ACCESS TO ALL THE MONGOOSE METHODS
 
-  // return the index where one of the products id's in the car matches the single product id
-  // if result >= 0 = product exist else not
+  /* FIND THE INDEX: current Product matches a Product in the users Cart 
+    if result >= 0: Product Exist = increase quantity;
+    else: Product does not Exist = insert the product; 
+  */
+  // cp = cart product
   const cartProductIndex = this.cart.items.findIndex((cp) => {
     // different structure arised by population the users cart with products
+    // * return the index where this condition gets fullfilled
     return cp.productId.toString() === product._id.toString();
   });
+
+  // ============== Product is already in the cart ==============
+  // * ------------------> UPDATING THE CART ITEMS ARRAY
   let newQuantity = 1;
   const updatedCartItems = [...this.cart.items];
 
   if (cartProductIndex >= 0) {
+    // INCREAE QUANTITY WITH 1
     newQuantity = this.cart.items[cartProductIndex].quantity + 1;
-    // update the quantity of the given product in the cart
     updatedCartItems[cartProductIndex].quantity = newQuantity;
   } else {
-    // push new cartItem : since product = a instance of the model
+    // ============== Product is NOT in the cart ==============
+    // push new cartItem = product = a instance of the model/schema
+    // ! Please refer to Product schema
     updatedCartItems.push({
-      // --------- Look in user schema for reference, how a  cartItem should look like---------
+      // --------- user Schema : ProductItem constraints ---------
       // mongoose will automatically wrap the id into objectId
       productId: product._id,
+      // newQuantity will be 1
       quantity: newQuantity,
     });
   }
   const updatedCart = {
     items: updatedCartItems,
   };
+  // * SAVE THE updated CartItems array inside "this" user cart
+  // * SAVE THE user Instance (< its changes in the cart) in the USER COLLECTION
   this.cart = updatedCart;
-  // access the instance method / save itself
   return this.save();
 };
 
 userSchema.methods.removeFromCart = function (productId) {
+  // STRIP OUT THE PRODUCT IF ITS INSIDE AND RETURN NEW ARRAY
   const updatedCartItems = this.cart.items.filter((item) => {
     return item.productId.toString() !== productId.toString();
   });
-  this.cart.items = updatedCartItems;
-  // save this userInstance
+  const updatedCart = {
+    items: updatedCartItems,
+  };
+  this.cart = updatedCart;
   return this.save();
 };
 
 userSchema.methods.clearCart = function () {
-  this.cart = { items: [] };
+  // * make it unfiformly like in removeFrom Cart/ Add to Cart
+  const updatedCartItems = [];
+  const updatedCart = { items: updatedCartItems };
+  // in short this.cart = {items: []};
+  this.cart = updatedCart;
   return this.save();
 };
 
@@ -103,6 +126,7 @@ userSchema.methods.clearCart = function () {
 //     })
 //     .catch((err) => console.log(err));
 // };
+
 module.exports = mongoose.model("User", userSchema);
 
 // const res = require("express/lib/response");
