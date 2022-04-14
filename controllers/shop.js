@@ -1,11 +1,12 @@
 // =============== CONTROLLER FOR "/ route" ===========
 
 const Product = require("../models/product");
-const User = require("../models/user");
 const Order = require("../models/order");
+// const User = require("../models/user");
 // const Cart = require(../models/cart")
 
 exports.getHomepage = (req, res, next) => {
+  console.log("get homepage");
   // GET ALL THE PRODUCTS
   Product.find()
     .then((products) => {
@@ -14,6 +15,8 @@ exports.getHomepage = (req, res, next) => {
         pageTitle: "Homepage",
         path: "/",
         isAuthenticated: req.session.isLoggedIn,
+        // * method provided by csrf middleware: generate token
+        csrfToken: req.csrfToken(),
       });
     })
     .catch((err) => console.log(err));

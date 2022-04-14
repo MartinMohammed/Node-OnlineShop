@@ -3,6 +3,13 @@
 const Product = require("../models/product");
 
 exports.getAddProduct = (req, res, next) => {
+  // WORKING ON ROUTE PROTECTION - RESTRICT THE ACCESS OF THE USER
+  // ! express-session - MIDDLEWARE !
+  // USER IS NOT LOGGEDIN
+  if (!req.session.isLoggedIn) {
+    return res.redirect("/login");
+  }
+  // USER IS LOGGEDIN
   res.render("admin/edit-product", {
     pageTitle: "Add Product",
     path: "/admin/add-product",

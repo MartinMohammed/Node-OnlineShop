@@ -1,12 +1,13 @@
 const path = require("path");
+const cors = require("cors");
 
 const express = require("express");
 const bodyParser = require("body-parser");
 const handlebars = require("express-handlebars");
 const mongoose = require("mongoose");
-// session middleware
 const session = require("express-session");
 const MongoDBStore = require("connect-mongodb-session")(session);
+const csrf = require("csurf");
 
 // IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
@@ -15,6 +16,9 @@ const authRoutes = require("./routes/auth");
 
 // IMPORT CONTROLLERS
 const errorsController = require("./controllers/errors");
+
+// CUSTOM MIDDLEWARE
+const haveActiveSession = require("./middleware/have-activeSession");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
@@ -36,7 +40,7 @@ const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PAS
 
 const app = express();
 
-// * INITIALIZE NEW MONGO DB STREO FOR SESSIONS / use same database: shop
+// * INITIALIZE NEW MONGO DB STORE FOR SESSIONS / use same database: shop
 const sessionStore = new MongoDBStore({
   // URI - connection string / which database sever to store data
   uri: MONGO_URI,
@@ -45,60 +49,23 @@ const sessionStore = new MongoDBStore({
 });
 
 // --------------------- APPLICATION CONFIGURATION ---------------------
-/* GLOBAL CONFIGURATION - SET VIEW ENGINE 
-  VALUE on Express application (keys, config items) -> can be accessed with app.get();
-  * reserved keys --> views (dir to dynamic views - default = /views) & views engine -> tell express for any dynnmaic templates trying to render
-  and there will be a special function for doing that (please use what is specified by us)
-*/
+// // enabled for all origins
+// app.use(
+//   cors({
+//     origin: "http:192.168.2.122:4000",
+//   })
+// );
+
+// * DOC: Regular Middleware Global Configuration
 app.set("view engine", "ejs");
 app.set("views", `views`);
-
-// MySQL
-// safer than query method
-// .catch when a promise gets rejected
-// .then when a promise gets resolved
-// each chained promise gets the results of its predecessor
-// db.execute("SELECT * FROM products")
-//   .then((result) => {
-//     console.log(result[0], result[1]);
-//   })
-//   .catch((err) => {
-//     console.log(err);
-//   });
-
-// TODO: IF USE HANDLEBARS AS VIEW ENGINE UNCOMMENT THAT BLOCK
-// if (CURRENT_VIEW_ENGINE === "hbs") {
-//   // ------------------------ SET HANDLEBARS ----------------------------
-//   // init handlebars view engine + some configuration
-//   app.engine(
-//     "hbs",
-//     handlebars({
-//       layoutsDir: "views/hbs/layouts/",
-//       defaultLayout: "main-layout",
-//       // only apply for main layout
-//       extname: "hbs",
-//     })
-//   );
-
-//   // pug built-in express upport => auto register with express
-//   // after slash which view engine we want to use
-// }
 
 // -------------- REGISTER MIDDLEWARE FOR EACH INCOMING REQUEST ---------------
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, "public")));
 
-/* SESSION CONFIGRUATION - ARGS
- * >secret: used for signing the HASH which secretly stores our ID in the cookie / key for encrypting cookies
- * >resafe: session will not be saved on every request that is done, so on every response that is sent
- *  but only if something changed in the session => improve perfomance
- * >saveUnitialized: no session gets saved for a request where it doesn't need to be saved because nothing was changed about it
- * >cookie: configuration for session cookie like Max-Age; Http-Only; Expires
- * 
-  ADVANTAGE: => each request brings a cookie => this cookie identifies a session (parsed by session middleware) => collectionData in req.session 
-  thus: now the user is available for every (accross) request object from the same window / tab -> which identifies a particular session by the session id
- */
-
+// * DOC: Regular Middleware Local Authentication: express-session
+// ! csrfProtection wil use the session (save the secret)
 app.use(
   session({
     secret: "my secret",
@@ -108,28 +75,17 @@ app.use(
   })
 );
 
-//  ! req.user will survive cross request because the userId is stored in the sessionStore
-// it will have session data loaded / if no session was found session object by default
-app.use((req, res, next) => {
-  // if we have an active session
-  if (req.session.user) {
-    /* 
-      * req.user : req object property 
-      NEED mongoose model methods to work with the document
-      STORE THAT USER IN REQUEST to use it anywhere in app
-    */
-    User.findById(req.session.user._id)
-      .then((user) => {
-        // now mongoose model / instance of it
-        req.user = user;
-        next();
-      })
-      .catch((err) => console.log(err));
-  } else {
-    // next middleware / routes
-    return next();
-  }
-});
+// * Generally enabled
+// INITIALIZE CSURF
+/* Args: 
+  secret: Used for assigning token / hashing 
+  ! cookie: Boolean = store secret in cookie or in session (default)
+  return: Middleware 
+*/
+app.use(csrf());
+
+// * DOC: Custom Middleware Global Session: haveActiveAuthentication
+app.use(haveActiveSession);
 
 // ! --------------- A USER SHOULD BE NOT SAVED FOR EVERY INCOMING REQUEST INSTEAD USE SESSIONS -------------
 // // * THIS RUNS FOR EVERY REQUEST THAT IS WHY WE CAN ACCESS req.user later in a router handler
@@ -156,8 +112,6 @@ app.use((req, res, next) => {
 
 // ------------------ ROUTE FILTERING ---------------
 app.use("/admin", adminRoutes);
-app.use("/", shopRoutes);
-
 // every request will go there when it is not found in the shop Routes
 app.use("/", authRoutes);
 

@@ -6,5 +6,6 @@ exports.get404 = (req, res, next) => {
     pageTitle: "Add Product",
     path: "/404",
     isAuthenticated: req.session.isLoggedIn,
+    csrfToken: req.csrfToken(),
   });
 };
