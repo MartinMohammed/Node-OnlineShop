@@ -146,3 +146,15 @@ returns a Validation chain (middleware) for one or more fields
 ## Regular Middleware Global ParsingFiles: Multer
 
 Multer will look for Form submits in every incoming request where enctype is set to "mutlipart/formdata" and it will try to parse it for us.
+
+**Initialization**
+Extract in request one single file from the req.body where name equals image
+app.use(multer().single("image"));
+
+It will save the extracted file in the request object as file
+
+***Output***:
+{fieldname: "image", originalname: "fileName", encoding: "7bit", mimetype, buffer (binary data)}
+
+***Configuration***
+dest: Where to save the input Files

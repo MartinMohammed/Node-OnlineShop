@@ -49,7 +49,7 @@ exports.postAddProduct = (req, res, next) => {
     title: title,
     price: price,
     description: description,
-    imageUrl: imageUrl,
+    imageUrl: image,
     // conveniently pass entire user object } mongoose pick the id from that object
     userId: req.session.user,
   });

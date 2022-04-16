@@ -9,7 +9,6 @@ const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 const flash = require("connect-flash");
 const bodyParser = require("body-parser");
-const multer = require("multer");
 
 // IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
@@ -22,10 +21,12 @@ const errorsController = require("./controllers/errors");
 // CUSTOM MIDDLEWARE
 const haveActiveSession = require("./middleware/have-activeSession");
 const setLocals = require("./middleware/set-locals");
+const multerMiddleware = require("./middleware/multerConfig");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
 const User = require("./models/user");
+const multerConfig = require("./middleware/multerConfig");
 
 // MONGO DATABASE CREDENTIALS
 const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
@@ -43,12 +44,17 @@ const sessionStore = new MongoDBStore({
 
 // TODO: CORS Configuration
 // ------------ GLBOAL CONFIGURATION ----------------
-// * DOC: Regular Middleware Global Configuration
+// * DOC: Regular Middleware Global Configuration: template / view engine(ejs)
 app.set("view engine", "ejs");
 app.set("views", `views`);
 
 // -------------- REGISTER MIDDLEWARE FOR EACH INCOMING REQUEST ---------------
+// * Request parser
 app.use(bodyParser.urlencoded({ extended: false }));
+// * DOC: Regular Middleware Global ParsingFiles: multer
+app.use(multerConfig);
+
+// * Serve static files (public folder)
 app.use(express.static(path.join(__dirname, "public")));
 
 // * DOC: Regular Middleware Local Authentication: express-session
@@ -120,13 +126,10 @@ app.use((error, req, res, next) => {
   switch (error.httpStatusCode) {
     case 500:
       // TO AVOID INFINITE ERROR LOOP
-      return (
-        res.status(500).render("500"),
-        {
-          pageTitle: "Error Page",
-          path: "/404",
-        }
-      );
+      return res.status(500).render("500", {
+        pageTitle: "Error Page",
+        path: "/404",
+      });
   }
 });
 // ! ---------------------------- MONGODB NATIVE DRIVER ------------------------
