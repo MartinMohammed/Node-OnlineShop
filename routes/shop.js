@@ -1,5 +1,4 @@
 // ----------------- MANAGE VISITOR RELATED STUFF -------------
-const path = require("path");
 const express = require("express");
 
 const rootDir = require("../util/path");

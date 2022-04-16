@@ -2,12 +2,14 @@ const path = require("path");
 const cors = require("cors");
 
 const express = require("express");
-const bodyParser = require("body-parser");
 const handlebars = require("express-handlebars");
-const mongoose = require("mongoose");
 const session = require("express-session");
+const mongoose = require("mongoose");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
+const flash = require("connect-flash");
+const bodyParser = require("body-parser");
+const multer = require("multer");
 
 // IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
@@ -19,6 +21,7 @@ const errorsController = require("./controllers/errors");
 
 // CUSTOM MIDDLEWARE
 const haveActiveSession = require("./middleware/have-activeSession");
+const setLocals = require("./middleware/set-locals");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
@@ -27,16 +30,6 @@ const User = require("./models/user");
 // MONGO DATABASE CREDENTIALS
 const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
 const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
-
-// ! ---------------------------- USING MYSQL ------------------------
-// const sequilize = require("./util/database");
-// const Product = require("./models/product");
-// const User = require("./models/user");
-// const Cart = require("./models/cart");
-// const CartItem = require("./models/cart-item");
-
-// const Order = require("./models/order");
-// const OrderItem = require("./models/order-item");
 
 const app = express();
 
@@ -48,14 +41,8 @@ const sessionStore = new MongoDBStore({
   // when sessions should be expired and cleaned up by mongodb auto.
 });
 
-// --------------------- APPLICATION CONFIGURATION ---------------------
-// // enabled for all origins
-// app.use(
-//   cors({
-//     origin: "http:192.168.2.122:4000",
-//   })
-// );
-
+// TODO: CORS Configuration
+// ------------ GLBOAL CONFIGURATION ----------------
 // * DOC: Regular Middleware Global Configuration
 app.set("view engine", "ejs");
 app.set("views", `views`);
@@ -75,14 +62,11 @@ app.use(
   })
 );
 
-// * Generally enabled
-// INITIALIZE CSURF
-/* Args: 
-  secret: Used for assigning token / hashing 
-  ! cookie: Boolean = store secret in cookie or in session (default)
-  return: Middleware 
-*/
+// * DOCS: Regular Middleware Global Csrf_Protection: csurf
 app.use(csrf());
+
+// * DOCS: Regular Middleware Global USER_FEEDBACK: connect-flash
+app.use(flash());
 
 // * DOC: Custom Middleware Global Session: haveActiveAuthentication
 app.use(haveActiveSession);
@@ -110,14 +94,41 @@ app.use(haveActiveSession);
 //     .catch((err) => console.log(err));
 // });
 
+// ------------ SET LOCAL VARIABLES THAT ARE PASSED INTO THE VIEWS -----------
+// For very request that is executed, these two fields will be set for the views that are rednered
+app.use(setLocals);
+
 // ------------------ ROUTE FILTERING ---------------
+// Only loggedIn user
 app.use("/admin", adminRoutes);
-// every request will go there when it is not found in the shop Routes
+
+// Everything related for (not) loggedIn User
+app.use("/", shopRoutes);
+
+//  Everything related to signUp, signOut
 app.use("/", authRoutes);
 
+app.get("/500", errorsController.get500);
 // for all http methods get/post
 app.use("/", errorsController.get404);
 
+// * SPECIAL TYPE OF MIDDLEWARE - ERROR HANDLING MIDDLEWARE WITH 4 ARGUMENTS
+// All in-between middelware in controller will be skipped to this middleware
+app.use((error, req, res, next) => {
+  // we could use the error.httpStatusCode to render another page it
+  // and pass it the error code
+  switch (error.httpStatusCode) {
+    case 500:
+      // TO AVOID INFINITE ERROR LOOP
+      return (
+        res.status(500).render("500"),
+        {
+          pageTitle: "Error Page",
+          path: "/404",
+        }
+      );
+  }
+});
 // ! ---------------------------- MONGODB NATIVE DRIVER ------------------------
 // ONLY START WEBSERVER IF DATABASE CONNECTION IS CREATED
 mongooseConnect(() => {

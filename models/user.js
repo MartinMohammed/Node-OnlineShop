@@ -13,6 +13,7 @@ const userSchema = new mongoose.Schema({
   //   type: String,
   //   required: true,
   // },
+  // ---------------- CREDENTIALS -----------
   email: {
     type: String,
     required: true,
@@ -21,6 +22,16 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  // ---------------- RESET PASSWORD -----------
+  resetToken: {
+    type: String,
+    required: false,
+  },
+  resetTokenExpiration: {
+    type: Date,
+    required: false,
+  },
+  // ---------------- CART / SHOPPING -----------
   // EACH USER HAS A CART OF ITEMS; EACH ITEM HAS PRODUCTID THAT CAN BE RELATED / INSERTED } ONE-TO-ONE RELATION => legitimize embedding & refencing documents
   cart: {
     // embedded document / define an array of documents
@@ -48,7 +59,7 @@ const userSchema = new mongoose.Schema({
   },
 });
 
-// --------------- CUSTOM INSTANCE METHODS FOR MODIFYING THE USERS CART -------------
+// * --------------- CUSTOM INSTANCE METHODS FOR MODIFYING THE USERS CART -------------
 // * <Schema>.methods = special key for static methods
 // -------------- ADD THE SELECTED PRODUCT INTO THE this.cart --------------
 userSchema.methods.addToCart = function (product) {
@@ -66,7 +77,7 @@ userSchema.methods.addToCart = function (product) {
   });
 
   // ============== Product is already in the cart ==============
-  // * ------------------> UPDATING THE CART ITEMS ARRAY
+  // * UPDATING THE CART ITEMS ARRAY
   let newQuantity = 1;
   const updatedCartItems = [...this.cart.items];
 
@@ -115,16 +126,6 @@ userSchema.methods.clearCart = function () {
   this.cart = updatedCart;
   return this.save();
 };
-
-// userSchema.methods.getOrders = function () {
-//   // find the associated orders from the current user
-//   // * apparently not confuse with other model
-//   return Order.find({ "user.userId": this._id })
-//     .then((orders) => {
-//       return orders;
-//     })
-//     .catch((err) => console.log(err));
-// };
 
 module.exports = mongoose.model("User", userSchema);
 

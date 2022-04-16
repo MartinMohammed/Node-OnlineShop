@@ -1,6 +1,6 @@
 // ----------------- MANAGE ADMIN RELATED STUFF -------------
 //  ROUTE FOR (app.use("/admin"))
-const path = require("path");
+const { body } = require("express-validator/check");
 const express = require("express");
 const rootDir = require("../util/path");
 
@@ -15,14 +15,69 @@ const router = express.Router();
 
 // ------------- CREATING PRODUCT -----------
 router.get("/add-product", isAuth, adminController.getAddProduct);
-router.post("/add-product", isAuth, adminController.postAddProduct);
+router.post(
+  "/add-product",
+  isAuth,
+  [
+    body(
+      ["title"],
+      "Please enter a password with only numbers and text and at least 5 characters."
+    )
+      .isString()
+      .isLength({
+        min: 3,
+      })
+      .trim(),
+    // body(["image"], "Please provide a valid url.").isURL(),
+    // must have decimal places
+    body(["price"], "Please enter a valid Price").isFloat(),
+    body(
+      ["description"],
+      "Please enter a valid description with a minimum length of 5."
+    )
+      .isLength({
+        min: 5,
+        max: 100,
+      })
+      .trim(),
+  ],
+  adminController.postAddProduct
+);
 
 // ----------------- GET PRODUCTS ------------
 router.get("/products", isAuth, adminController.getProducts);
 
 // ---------------- EDIT PRODUCT ------------
 router.get("/edit-product/:productId", isAuth, adminController.getEditProduct);
-router.post("/edit-product", isAuth, adminController.postEditProduct);
+router.post(
+  "/edit-product",
+  isAuth,
+  [
+    body(
+      ["title"],
+      "Please enter a password with only numbers and text and at least 5 characters."
+    )
+      .isString()
+      .isLength({
+        min: 3,
+      })
+      .trim(),
+    // body(["image"], "Please provide a valid url.").isURL(),
+    // must have decimal places
+    body(["price"], "Please enter a valid Price").isFloat(),
+    body(
+      ["description"],
+      "Please enter a valid description with a minimum length of 5."
+    )
+      .isLength({
+        min: 5,
+        max: 100,
+      })
+      .trim(),
+  ],
+
+  adminController.postEditProduct
+);
 
 // ----------------- DELETE PRODUCT ------------
 router.post("/delete-product", isAuth, adminController.postDeleteProduct);

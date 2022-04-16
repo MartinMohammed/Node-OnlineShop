@@ -1,7 +1,9 @@
 // =============== CONTROLLER FOR "/admin route" ===========
+const { validationResult } = require("express-validator/check");
 
 const Product = require("../models/product");
 
+// ------------------- ADD PRODUCT ---------------
 exports.getAddProduct = (req, res, next) => {
   // WORKING ON ROUTE PROTECTION - RESTRICT THE ACCESS OF THE USER
   // ! express-session - MIDDLEWARE !
@@ -14,13 +16,34 @@ exports.getAddProduct = (req, res, next) => {
     pageTitle: "Add Product",
     path: "/admin/add-product",
     editing: false,
-    isAuthenticated: req.session.isLoggedIn,
+    hasError: false,
+    errorMessage: null,
+    validationErrors: [],
   });
 };
 
 exports.postAddProduct = (req, res, next) => {
-  const { title, price, description, imageUrl } = req.body;
-
+  const { title, price, description, image } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    // console.log(errors.array());
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      errorMessage: errors.array()[0].msg,
+      // provide previous input if the user
+      product: {
+        title,
+        price,
+        image,
+        description,
+      },
+      // * For dynamical styling : show user which fields are unvalid
+      validationErrors: errors.array(),
+    });
+  }
   // * our Product schema from product.js model; map the different values we defined in our schema
   const product = new Product({
     title: title,
@@ -40,88 +63,159 @@ exports.postAddProduct = (req, res, next) => {
       res.redirect("/admin/products");
     })
     .catch((err) => {
-      console.log(err);
+      // ! IF Temporary Isse
+      //   return res.status(500).render("admin/edit-product", {
+      //     pageTitle: "Add Product",
+      //     path: "/admin/add-product",
+      //     editing: false,
+      //     hasError: true,
+      //     errorMessage: "Database operation failed, please try again.",
+      //     // provide previous input if the user
+      //     product: {
+      //       title,
+      //       price,
+      //       imageUrl,
+      //       description,
+      //     },
+      //     validationErrors: [],
+      //   });
+      //  ! ELSE LASTING ISSUE
+      // return res.redirect("/500");
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
+// ------------------- EDIT PRODUCT ---------------
 // RENDER THE ADMIN ONLY ONE PRODUCT WITH ITS DATA
 exports.getEditProduct = (req, res, next) => {
+  const loggedInUser = req.session.user;
+
   const editMode = req.query.edit;
   if (!editMode) {
-    res.redirect("/");
+    return res.redirect("/");
   }
   const productId = req.params.productId;
+  // ! PRODUCTID IS ONLY VALID IF THE LENGTH IS 24 == ObjectId length of mongodb
+  if (productId.length !== 24) {
+    return res.redirect("/admin/products");
+  }
+
+  // ! ------------ AUTHORIZATON ----------
+  // only allowed to edit a product that he made
   Product.findById(productId)
     .then((product) => {
+      // redirect either if he tries to edit a unvalid product or he is not the owner of the product
+      if (
+        !product ||
+        product.userId.toString() !== loggedInUser._id.toString()
+      ) {
+        return res.redirect("/");
+      }
       res.render("admin/edit-product", {
         pageTitle: "Edit Product",
         path: "/admin/edit-product",
         editing: true,
         product,
-        isAuthenticated: req.session.isLoggedIn,
+        hasError: false,
+        errorMessage: null,
+        validationErrors: [],
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postEditProduct = (req, res, next) => {
+  const loggedInUser = req.session.user;
   // GET THE CHANGES FROM THE FORM
-  const {
-    productId,
-    title: updatedTitle,
-    price: updatedPrice,
-    description: updatedDescription,
-    imageUrl: updatedImageURl,
-  } = req.body;
+  const { title, imageUrl, price, description, productId } = req.body;
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Edit Product",
+      path: "/admin/edit-product",
+      editing: true,
+      hasError: true,
+      product: {
+        title,
+        price,
+        imageUrl,
+        description,
+        _id: productId,
+      },
+      errorMessage: errors.array()[0].msg,
+      validationErrors: errors.array(),
+    });
+  }
 
   // GET THE SPECIFIC PRODUCT FROM THE COLLECTION
   // * full mongoose object with its methods / not normal js object
   Product.findById(productId)
     // UPDATE THE PRODUCT
     .then((product) => {
-      product.title = updatedTitle;
-      product.price = updatedPrice;
-      product.description = updatedDescription;
-      product.imageUrl = updatedImageURl;
+      // ! ------------ AUTHORIZATON ----------
+      // ONly allowed to make changed if he is the creator of the product
+      if (loggedInUser._id.toString() !== product.userId.toString()) {
+        return res.redirect("/");
+      }
+      product.title = title;
+      product.price = price;
+      product.description = description;
+      product.imageUrl = imageUrl;
       // saving it back into db = SAME _id = replace the old one with new one
-      return product.save();
+
+      // return Promise which resolves and in turn return another promise
+      // next promise function gets only called if the previous one was either fullfilled
+      // = .then or rejected = .catch
+      return product.save().then((result) => {
+        res.redirect("/admin/products");
+      });
     })
-    .then((result) => {
-      res.redirect("/admin/products");
-    })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 exports.postDeleteProduct = (req, res, next) => {
+  const loggedInUser = req.session.user;
+
   const productId = req.body.productId;
-  Product.findOneAndRemove(productId)
+  // ! ------------ AUTHORIZATON ----------
+  Product.deleteOne({ _id: productId, userId: loggedInUser._id })
     .then(() => {
       res.redirect("/admin/products");
     })
     .catch((err) => {
-      console.log(err);
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
     });
 };
 
 exports.getProducts = (req, res, next) => {
-  // * .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
-  Product.find()
-    // ! ------------- SPECIAL MONGOOSE METHODS: Selection(give only particular fields), populate(insert document)
-    // //  select which kind of data should be received / (which fields to select/ unselect)
-    // // * string space seperated : '-' means exclude productId
-    // .select("title price -_id")
-    // // * tell mongoose to populate a certain filed with all the detail information and not just the id
-    // // * now userId is not just the id instead the full object / because of the ref config
-    // // * same like select can be done with populate('pathToField(nested path)', 'name')
-    // // populate related field and fetch the related data
-    // .populate("userId")
+  const loggedInUser = req.session.user;
+
+  // ! ------------ AUTHORIZATON ----------
+  // * EACH PRODUCT IS ASSOCIATED WITH ITS CREATOR
+  // .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
+  Product.find({ userId: loggedInUser._id })
     .then((products) => {
       res.render("admin/products", {
         path: "/admin/products",
         pageTitle: "Admin Panel - Products",
         prods: products,
-        isAuthenticated: req.session.isLoggedIn,
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };

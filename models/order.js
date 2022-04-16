@@ -1,12 +1,13 @@
 const mongoose = require("mongoose");
 
 const orderSchema = new mongoose.Schema({
+  // ------------------- USER INFORMATION --------------
   user: {
     // * DEFINE FIELDS WITH ITS "CONSTRAINTS"
-    // name: {
-    //   type: String,
-    //   required: true,
-    // },
+    email: {
+      type: String,
+      required: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
@@ -14,6 +15,7 @@ const orderSchema = new mongoose.Schema({
       ref: "User",
     },
   },
+  // ------------------- ORDER ITEMS --------------
   // A LIST OF PRODUCTS
   products: [
     {

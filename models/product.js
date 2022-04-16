@@ -7,6 +7,7 @@ const Schema = mongoose.Schema;
 // Tell Mongoose/ Mongodb how our data will looks like (strucutre our data)
 // * DELIBERATE DECISION TO GIVE UP SOME FLEXIBILITY BUT GAIN OTHER ADANTAGES
 const productSchema = new Schema({
+  // ----------------- PRODUCT INFORMATION ---------------
   // objedId will be automatically added like in native driver
   // could be deviated (abweischen) - we have the flexibility
   title: {
@@ -26,6 +27,7 @@ const productSchema = new Schema({
     type: String,
     required: true,
   },
+  // ----------------- PRODUCT CREATOR ---------------
   // userId of the creator of this product
   userId: {
     type: mongoose.Schema.Types.ObjectId,

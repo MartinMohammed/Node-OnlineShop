@@ -6,7 +6,6 @@ const Order = require("../models/order");
 // const Cart = require(../models/cart")
 
 exports.getHomepage = (req, res, next) => {
-  console.log("get homepage");
   // GET ALL THE PRODUCTS
   Product.find()
     .then((products) => {
@@ -14,9 +13,6 @@ exports.getHomepage = (req, res, next) => {
         prods: products,
         pageTitle: "Homepage",
         path: "/",
-        isAuthenticated: req.session.isLoggedIn,
-        // * method provided by csrf middleware: generate token
-        csrfToken: req.csrfToken(),
       });
     })
     .catch((err) => console.log(err));
@@ -30,7 +26,6 @@ exports.getProducts = (req, res, next) => {
         prods: products,
         pageTitle: "All Products",
         path: "/products",
-        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -45,7 +40,6 @@ exports.getProduct = (req, res, next) => {
         product: product,
         pageTitle: product.title,
         path: "/products",
-        isAuthenticated: req.session.isLoggedIn,
 
         existingDetails: product !== undefined,
       });
@@ -64,7 +58,6 @@ exports.getCart = (req, res, next) => {
         pageTitle: "Cart",
         path: "/cart",
         products,
-        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -105,7 +98,6 @@ exports.getOrders = (req, res, next) => {
         path: "/orders",
         pageTitle: "Your Orders",
         orders,
-        isAuthenticated: req.session.isLoggedIn,
       });
     })
     .catch((err) => console.log(err));
@@ -129,8 +121,8 @@ exports.postOrder = (req, res, next) => {
         // needs to get products/ userData and
         // * USERDATA
         user: {
-          name: req.session.user.name,
-          userId: req.session.user,
+          email: req.user.email,
+          userId: req.user,
         },
         // * PRODUCTS ARRAY
         // [{quantity, productId}]
