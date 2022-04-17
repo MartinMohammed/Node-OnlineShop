@@ -54,8 +54,12 @@ app.use(bodyParser.urlencoded({ extended: false }));
 // * DOC: Regular Middleware Global ParsingFiles: multer
 app.use(multerConfig);
 
+// ------------ LOOK IF THE REQUEST IS POINTED TO A STATIC RESSOURCE -----------
 // * Serve static files (public folder)
 app.use(express.static(path.join(__dirname, "public")));
+
+// serve the images if the request goes to /images
+app.use("/images", express.static(path.join(__dirname, "images")));
 
 // * DOC: Regular Middleware Local Authentication: express-session
 // ! csrfProtection wil use the session (save the secret)
@@ -118,7 +122,7 @@ app.get("/500", errorsController.get500);
 // for all http methods get/post
 app.use("/", errorsController.get404);
 
-// * SPECIAL TYPE OF MIDDLEWARE - ERROR HANDLING MIDDLEWARE WITH 4 ARGUMENTS
+// * ---------SPECIAL TYPE OF MIDDLEWARE - ERROR HANDLING MIDDLEWARE WITH 4 ARGUMENTS--------
 // All in-between middelware in controller will be skipped to this middleware
 app.use((error, req, res, next) => {
   // we could use the error.httpStatusCode to render another page it
@@ -128,7 +132,7 @@ app.use((error, req, res, next) => {
       // TO AVOID INFINITE ERROR LOOP
       return res.status(500).render("500", {
         pageTitle: "Error Page",
-        path: "/404",
+        path: "/500",
       });
   }
 });

@@ -26,4 +26,7 @@ router.get("/products", shopController.getProducts);
 // dyamic route handler should be always last of its sub path
 router.get("/products/:productId", shopController.getProduct);
 
+// ---------------- ORDER INVOICES -----------
+router.get("/orders/:orderId", isAuth, shopController.getInvoice);
+
 module.exports = router;

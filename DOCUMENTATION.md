@@ -158,3 +158,9 @@ It will save the extracted file in the request object as file
 
 ***Configuration***
 dest: Where to save the input Files
+
+
+## Regular Package Local generate PDF files: pdfkit
+
+Allows to generate pdf on fly on the server.
+Very powerful package with fontSize ....

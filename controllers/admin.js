@@ -1,5 +1,6 @@
 // =============== CONTROLLER FOR "/admin route" ===========
 const { validationResult } = require("express-validator/check");
+const fileHelper = require("../util/fileHelper.js");
 
 const Product = require("../models/product");
 
@@ -23,7 +24,29 @@ exports.getAddProduct = (req, res, next) => {
 };
 
 exports.postAddProduct = (req, res, next) => {
-  const { title, price, description, image } = req.body;
+  const { title, price, description } = req.body;
+  const image = req.file;
+  // if it is not set: multer did declined the incoming file => fileFilter
+  if (!image) {
+    // invalid input
+    return res.status(422).render("admin/edit-product", {
+      pageTitle: "Add Product",
+      path: "/admin/add-product",
+      editing: false,
+      hasError: true,
+      errorMessage: "Attached file is not an image.",
+      // provide previous input if the user
+      product: {
+        title,
+        price,
+        description,
+      },
+      validationErrors: [],
+    });
+  }
+  // the path to the file in the file system
+  const imageUrl = image.path;
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     // console.log(errors.array());
@@ -49,7 +72,7 @@ exports.postAddProduct = (req, res, next) => {
     title: title,
     price: price,
     description: description,
-    imageUrl: image,
+    imageUrl: imageUrl,
     // conveniently pass entire user object } mongoose pick the id from that object
     userId: req.session.user,
   });
@@ -74,7 +97,6 @@ exports.postAddProduct = (req, res, next) => {
       //     product: {
       //       title,
       //       price,
-      //       imageUrl,
       //       description,
       //     },
       //     validationErrors: [],
@@ -133,7 +155,9 @@ exports.getEditProduct = (req, res, next) => {
 exports.postEditProduct = (req, res, next) => {
   const loggedInUser = req.session.user;
   // GET THE CHANGES FROM THE FORM
-  const { title, imageUrl, price, description, productId } = req.body;
+  const { title, price, description, productId } = req.body;
+  const image = req.file;
+
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     return res.status(422).render("admin/edit-product", {
@@ -144,7 +168,6 @@ exports.postEditProduct = (req, res, next) => {
       product: {
         title,
         price,
-        imageUrl,
         description,
         _id: productId,
       },
@@ -163,10 +186,20 @@ exports.postEditProduct = (req, res, next) => {
       if (loggedInUser._id.toString() !== product.userId.toString()) {
         return res.redirect("/");
       }
+
       product.title = title;
       product.price = price;
       product.description = description;
-      product.imageUrl = imageUrl;
+      // * If not present: do not update the left image in the database.
+      if (image) {
+        // * else he wants to update the old product image
+        // ! fire and forget manner => execute : no then or result
+        fileHelper.deleteFile(product.imageUrl);
+
+        // image.path = absolute path
+        product.imageUrl = image.path;
+        // ! delete the old image
+      }
       // saving it back into db = SAME _id = replace the old one with new one
 
       // return Promise which resolves and in turn return another promise
@@ -185,11 +218,22 @@ exports.postEditProduct = (req, res, next) => {
 
 exports.postDeleteProduct = (req, res, next) => {
   const loggedInUser = req.session.user;
-
   const productId = req.body.productId;
-  // ! ------------ AUTHORIZATON ----------
-  Product.deleteOne({ _id: productId, userId: loggedInUser._id })
+  // ----------- RACE CONDITION => Where deleteOne is earlier finish than finding ----------
+  Product.findById(productId)
+    .then((product) => {
+      if (!product) {
+        // Product not found
+        const error = new Error(err);
+        error.httpStatusCode = 500;
+        return next(error);
+      }
+      fileHelper.deleteFile(product.imageUrl);
+      // ! ------ AUTHORIZATION -----
+      return Product.deleteOne({ _id: productId, userId: loggedInUser._id });
+    })
     .then(() => {
+      console.log("Destroyed Product");
       res.redirect("/admin/products");
     })
     .catch((err) => {
