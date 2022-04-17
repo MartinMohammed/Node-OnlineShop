@@ -17,21 +17,21 @@ const fileStorage = multer.diskStorage({
 });
 
 const fileFilter = (req, file, cb) => {
-  // do some logic
+  // WHICH Mimetypes we accept
   if (
     file.mimetype === "image/png" ||
     file.mimetype === "image/jpg" ||
     file.mimetype === "image/jpeg"
   ) {
-    // *  provide true in the callback if file should be stored else false
+    // *  provide true in the callback = store file
     cb(null, true);
   } else {
     cb(null, false);
   }
 };
-// exports the function which returns the configured multer middleware
+// ! exports the function which returns the configured multer middleware
 module.exports = multer({
-  // add our configured fileStorage
+  // add our configured fileStorage & fileFilter
   storage: fileStorage,
   fileFilter: fileFilter,
 }).single("image");

@@ -1,6 +1,7 @@
 const User = require("../models/user");
 
 // ------------- SAVE THE USER IN THE REQUEST OBJECT ----------------
+// ! Called in the beginning of the request cycle in app.js
 module.exports = (req, res, next) => {
   if (req.session.user) {
     /* ACTIVE SESSION = AUTHENTICATED USER
@@ -12,10 +13,10 @@ module.exports = (req, res, next) => {
     User.findById(req.session.user._id)
       .then((user) => {
         if (!user) {
-          // If User was not found in the database
+          // User was not found in the database
           return next();
         }
-        // now mongoose model / instance of it
+        // On req.user => mongoose instance "syntactically sugar"
         req.user = user;
         next();
       })

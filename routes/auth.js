@@ -1,11 +1,14 @@
 // ------------ MANAGE AUTHENTICATION RELATED STUFF  -----------
+// Packages
 const express = require("express");
 // check function from the sub-package / object
 const { check, body } = require("express-validator/check");
 
 const authController = require("./../controllers/auth");
-const User = require("../models/user");
 const { emailValidatorSignIn } = require("../validators/auth");
+
+// Models
+const User = require("../models/user");
 
 const router = express.Router();
 

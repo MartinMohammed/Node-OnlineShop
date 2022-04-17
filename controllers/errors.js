@@ -1,4 +1,4 @@
-// =============== CONTROLLER FOR "/ route" ===========
+// =============== CONTROLLER FOR "/" route ===============
 // Server could not find the requested website
 exports.get404 = (req, res, next) => {
   // res.status(404).sendFile(path.join(__dirname, "views", "404.html"));

@@ -1,7 +1,11 @@
-// =============== CONTROLLER FOR "/admin route" ===========
+// =============== CONTROLLER FOR "/admin" route ===============
+// Packages
 const { validationResult } = require("express-validator/check");
+
+// Custom functions
 const fileHelper = require("../util/fileHelper.js");
 
+// Models
 const Product = require("../models/product");
 
 // ------------------- ADD PRODUCT ---------------
@@ -26,9 +30,9 @@ exports.getAddProduct = (req, res, next) => {
 exports.postAddProduct = (req, res, next) => {
   const { title, price, description } = req.body;
   const image = req.file;
-  // if it is not set: multer did declined the incoming file => fileFilter
+  // if it is not set: multer did declined the incoming file => fileFilter || no file was provided
   if (!image) {
-    // invalid input
+    // INVALID INPUT - Validation
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Add Product",
       path: "/admin/add-product",
@@ -44,12 +48,11 @@ exports.postAddProduct = (req, res, next) => {
       validationErrors: [],
     });
   }
-  // the path to the file in the file system
+  // The path to the file in the filesystem images/file.MIME
   const imageUrl = image.path;
 
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
-    // console.log(errors.array());
     return res.status(422).render("admin/edit-product", {
       pageTitle: "Add Product",
       path: "/admin/add-product",
@@ -63,11 +66,11 @@ exports.postAddProduct = (req, res, next) => {
         image,
         description,
       },
-      // * For dynamical styling : show user which fields are unvalid
+      // * For DYNAMICAL styling : show user which input fields are unvalid
       validationErrors: errors.array(),
     });
   }
-  // * our Product schema from product.js model; map the different values we defined in our schema
+  // create Product from Model
   const product = new Product({
     title: title,
     price: price,
@@ -78,15 +81,14 @@ exports.postAddProduct = (req, res, next) => {
   });
   // * now the product is 'eligible' to mongoose sugar syntax respectively methods
   product
-    // .save() is housemade method provided by mongoose
+    // Housemade method provided by mongoose
     .save()
     // actually we get a promise back but mongoose still gives us a .then method
     .then((result) => {
-      console.log("Created Product");
       res.redirect("/admin/products");
     })
     .catch((err) => {
-      // ! IF Temporary Isse
+      // ! IF Temporary Issue
       //   return res.status(500).render("admin/edit-product", {
       //     pageTitle: "Add Product",
       //     path: "/admin/add-product",
@@ -102,15 +104,14 @@ exports.postAddProduct = (req, res, next) => {
       //     validationErrors: [],
       //   });
       //  ! ELSE LASTING ISSUE
-      // return res.redirect("/500");
       const error = new Error(err);
       error.httpStatusCode = 500;
       return next(error);
     });
 };
 
-// ------------------- EDIT PRODUCT ---------------
-// RENDER THE ADMIN ONLY ONE PRODUCT WITH ITS DATA
+// ------------------- EDIT PRODUCT -------------------
+// RENDER THE ADMIN: ONLY ONE PRODUCT WITH ITS DATA
 exports.getEditProduct = (req, res, next) => {
   const loggedInUser = req.session.user;
 
@@ -118,8 +119,8 @@ exports.getEditProduct = (req, res, next) => {
   if (!editMode) {
     return res.redirect("/");
   }
-  const productId = req.params.productId;
   // ! PRODUCTID IS ONLY VALID IF THE LENGTH IS 24 == ObjectId length of mongodb
+  const productId = req.params.productId;
   if (productId.length !== 24) {
     return res.redirect("/admin/products");
   }
@@ -177,34 +178,26 @@ exports.postEditProduct = (req, res, next) => {
   }
 
   // GET THE SPECIFIC PRODUCT FROM THE COLLECTION
-  // * full mongoose object with its methods / not normal js object
   Product.findById(productId)
-    // UPDATE THE PRODUCT
     .then((product) => {
       // ! ------------ AUTHORIZATON ----------
-      // ONly allowed to make changed if he is the creator of the product
+      // Only allowed to make changed if he is the creator of the product
       if (loggedInUser._id.toString() !== product.userId.toString()) {
         return res.redirect("/");
       }
 
+      // UPDATE THE PRODUCT
       product.title = title;
       product.price = price;
       product.description = description;
-      // * If not present: do not update the left image in the database.
+      // * If present: He wants to update the old image of the product in the database
       if (image) {
-        // * else he wants to update the old product image
         // ! fire and forget manner => execute : no then or result
+        // ! delete the old image in the file system
         fileHelper.deleteFile(product.imageUrl);
-
-        // image.path = absolute path
         product.imageUrl = image.path;
-        // ! delete the old image
       }
-      // saving it back into db = SAME _id = replace the old one with new one
-
-      // return Promise which resolves and in turn return another promise
-      // next promise function gets only called if the previous one was either fullfilled
-      // = .then or rejected = .catch
+      // Save the changes in the database
       return product.save().then((result) => {
         res.redirect("/admin/products");
       });
@@ -233,7 +226,6 @@ exports.postDeleteProduct = (req, res, next) => {
       return Product.deleteOne({ _id: productId, userId: loggedInUser._id });
     })
     .then(() => {
-      console.log("Destroyed Product");
       res.redirect("/admin/products");
     })
     .catch((err) => {
@@ -245,10 +237,8 @@ exports.postDeleteProduct = (req, res, next) => {
 
 exports.getProducts = (req, res, next) => {
   const loggedInUser = req.session.user;
-
   // ! ------------ AUTHORIZATON ----------
   // * EACH PRODUCT IS ASSOCIATED WITH ITS CREATOR
-  // .cursor() will give us access to the cursor / each async || next => will give us option to iterate through
   Product.find({ userId: loggedInUser._id })
     .then((products) => {
       res.render("admin/products", {

@@ -1,34 +1,88 @@
-// =============== CONTROLLER FOR "/ route" ===========
+// =============== CONTROLLER FOR "/" route ===============
+// Packages
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
 
+// Models
 const Product = require("../models/product");
 const Order = require("../models/order");
-// const User = require("../models/user");
-// const Cart = require(../models/cart")
+
+// Constants
+const ITEMS_PER_PAGE = 2;
 
 exports.getHomepage = (req, res, next) => {
-  // GET ALL THE PRODUCTS
+  //*  Get the information which page we are
+  //* = which data for which page needs to be displayed
+
+  // IF undefined => fallback
+  const page = Number(req.query.page) || 1;
+  let totalItems;
+
   Product.find()
+    .count()
+    .then((numProducts) => {
+      totalItems = numProducts;
+      return (
+        Product.find()
+          // ---------------- DATABASE SIDE -----------------
+          // ! returns a cursor - skip the first X amount of results
+          //  * On page 1: (1 - 1) * 2 = 0. Return the first two products
+          .skip((page - 1) * ITEMS_PER_PAGE)
+          // ! limit the amount of data we fetch to the specified number
+          .limit(ITEMS_PER_PAGE)
+      );
+    })
     .then((products) => {
-      res.render("shop/product-list", {
+      res.render("shop/index", {
         prods: products,
         pageTitle: "Homepage",
         path: "/",
+        // ------------- PREPERATION PAGINATION DATA ON THE SERVER  ------------
+        currentPage: page,
+        // e.g. On page 1: 1 * 2 < 3: If true we have still products left to display
+        hasNextPage: page * ITEMS_PER_PAGE < totalItems,
+        // page 1 is the most starting page
+
+        // Can be avoided: If page > 1 (no minus pages) && page != 2 (previous Page is not starting page)
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        // e.g. have 11 totalItems: 11 / 2 => 6
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
       });
     })
     .catch((err) => console.log(err));
 };
 
 exports.getProducts = (req, res, next) => {
-  // GET ALL THE PRODUCTS
+  const page = Number(req.query.page) || 1;
+
+  let totalItems;
+  // CONTROL THE AMOUNT OF DATA WE RECEIVE
   Product.find()
+    .countDocuments()
+    .then((numProducts) => {
+      totalItems = numProducts;
+      return Product.find()
+        .skip((page - 1) * ITEMS_PER_PAGE)
+        .limit(ITEMS_PER_PAGE);
+    })
     .then((products) => {
       res.render("shop/product-list", {
         prods: products,
-        pageTitle: "All Products",
+        pageTitle: "Products",
         path: "/products",
+        currentPage: page,
+        // e.g. On page 1: 1 * 2 < 3: If true we have still products left to display
+        hasNextPage: page * ITEMS_PER_PAGE < totalItems,
+        // page 1 is the most starting page
+
+        hasPreviousPage: page > 1,
+        nextPage: page + 1,
+        previousPage: page - 1,
+        // e.g. have 11 totalItems: 11 / 2 => 6
+        lastPage: Math.ceil(totalItems / ITEMS_PER_PAGE),
       });
     })
     .catch((err) => console.log(err));

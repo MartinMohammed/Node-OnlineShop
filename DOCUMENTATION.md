@@ -3,7 +3,8 @@
 ## Custom Middleware Local Authentication: isAuth()
 
 ADD MIDDLEWARES INTO ROUTE HANDLER AS ARGUMENT.
-Check if the current User is logged in. LogIn status by express-session middleware.
+Check if the current User is logged in. By default every session sets isLoggedIn to false
+LogIn status by express-session middleware.
 
 ADD as many Arguments/ Middleware we want => Parsed from the left to right (request)
 So if the User is logged in => next() middleware => getAddProduct

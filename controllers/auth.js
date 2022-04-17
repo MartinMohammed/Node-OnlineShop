@@ -1,4 +1,4 @@
-// =============== CONTROLLER FOR "/ route" ===========
+// =============== CONTROLLER FOR "/" route ===============
 // * USE BCRYPT TO HASH / ENCRYPT PASSWORD
 const bcrypt = require("bcryptjs");
 const nodemailer = require("nodemailer");
@@ -19,7 +19,7 @@ const FROM_EMAIL = "emailfortesting91@gmail.com";
 // * setup telling how e-mails will be delivered
 // sendgridTransport will return a configuration that nodemailer can use to use to sendgrid email server
 const transporter = nodemailer.createTransport(
-  // also username & api key would work
+  // USERNAME & APIKEY would also work
   sendgridTransport({
     auth: {
       api_key: SENDGRID_API_KEY,
@@ -29,28 +29,26 @@ const transporter = nodemailer.createTransport(
 
 const User = require("../models/user");
 
-// -------------- SIGNUP FLOW -----------------
+// -------------- SIGNUP/ Registration FLOW -----------------
 exports.getSignup = (req, res, next) => {
-  // * For documentation look getLogin about req.flash()
   let message = req.flash("error");
   message = message.length > 0 ? message[0] : null;
   res.render("auth/signup", {
     path: "/signup",
     pageTitle: "Singup",
     errorMessage: message,
-    // First Render = No previous Input
+    // First Render = No previous Input of the user
     oldInput: {
       email: "",
       password: "",
     },
-    // First Render = No previous Errors
+    // First Render = No previous Errors invoked by user
     validationErrors: [],
   });
 };
-// * Signup ≠ Signin (Login)} active session | enter application as authenticated user
+// Store new User into database
 exports.postSignup = (req, res, next) => {
   // --------------- AUTHENTICATION FLOW ----------------
-  // Store new User into database
   const { email, password, confirmPassword } = req.body;
 
   const errors = validationResult(req);
@@ -150,12 +148,12 @@ exports.getLogin = (req, res, next) => {
     pageTitle: "Login",
     errorMessage: message,
 
-    // First Render = No previous Input
+    // First Render = No previous Input of the user
     oldInput: {
       email: "",
       password: "",
     },
-    // First Render = No previous Errors
+    // First Render = No previous Errors invoked by user
     validationErrors: [],
   });
 };
@@ -200,7 +198,6 @@ exports.postLogin = (req, res, next) => {
             email: email,
             password: password,
           },
-          // Actually only the email failed but we want deceive (täuschen)
           validationErrors: [
             {
               param: "email",
