@@ -127,6 +127,7 @@ app.use("/", errorsController.get404);
 app.use((error, req, res, next) => {
   // we could use the error.httpStatusCode to render another page it
   // and pass it the error code
+  console.log(error);
   switch (error.httpStatusCode) {
     case 500:
       // TO AVOID INFINITE ERROR LOOP

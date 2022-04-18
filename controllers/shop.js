@@ -1,8 +1,12 @@
 // =============== CONTROLLER FOR "/" route ===============
 // Packages
+require("dotenv").config();
 const fs = require("fs");
 const path = require("path");
 const PDFDocument = require("pdfkit");
+// Provide the Private api key
+const { STRIPE_PRIVATE_KEY } = process.env;
+const stripe = require("stripe")(STRIPE_PRIVATE_KEY);
 
 // Models
 const Product = require("../models/product");
@@ -117,7 +121,11 @@ exports.getCart = (req, res, next) => {
         products,
       });
     })
-    .catch((err) => console.log(err));
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
 };
 
 // ADD PRODUCT TO THE CART
@@ -159,31 +167,88 @@ exports.getOrders = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
-exports.postOrder = (req, res, next) => {
+
+// ------------------- CHECKOUT ----------------
+exports.getCheckout = (req, res, next) => {
+  // block scope
+  let products;
+  let totalSum = 0;
+  // * Current logged in user
   req.user
-    // * it will populate "cart.items.productId": {productData such as title...}
-    // * insert the product (document) where the id field is
+    .populate("cart.items.productId")
+    .then((user) => {
+      products = user.cart.items;
+      // * for every product in the cart:
+      // USER MODEL
+      products.forEach((product) => {
+        totalSum += product.quantity * product.productId.price;
+      });
+      // ------------ STRIPE SESSION ---------------
+      //  ! Our customer will use our public key & we create for them a Stripe Session where they checkout
+      /* ! stipeCheckoutSession configuration
+        - payment_method_types: allows payment methods such as credit card
+        - line_Items: [{name, description, amount(in cents), currency, quantity}] : Product Data stripe needs to make charges (process the payment)
+          checkout Items 
+        - 
+        - success_url & cancel_url:
+          * URLS stripe will redirect the user once the transaciton was completed or failed
+          * http or https || the ipadress / domain of the host deployed it onto
+      */
+      return stripe.checkout.sessions.create({
+        payment_method_types: ["card"],
+        line_items: products.map((p) => {
+          // ! user.cart.items array of products : productId populated with actual product data
+          const { title, description, price } = p.productId;
+          return {
+            name: title,
+            description: description,
+            amount: price * 100,
+            currency: "usd",
+            quantity: p.quantity,
+          };
+        }),
+        success_url: `${req.protocol}://${req.get("host")}/checkout/success`,
+        cancel_url: `${req.protocol}://${req.get("host")}/checkout/cancel`,
+      });
+    })
+    .then((session) => {
+      res.render("shop/checkout", {
+        pageTitle: "Checkout",
+        path: "/checkout",
+        products,
+        totalSum: totalSum,
+        sessionId: session.id,
+      });
+    })
+    .catch((err) => {
+      const error = new Error(err);
+      error.httpStatusCode = 500;
+      return next(error);
+    });
+};
+
+// Create a order after the user went successfully through the paymend process
+exports.getCheckoutSuccess = (req, res, next) => {
+  req.user
+    // * it will populate "cart.items.productId": {product Data such as title...}
     .populate("cart.items.productId")
     .then((user) => {
       // * -------------- IN ACCORDANCE WITH THE ORDER MODEL/ SCHEMA -------------
-      // updated cart items now with product data
       // return the according array of products to the order schema
       const products = user.cart.items.map((i) => {
         // * properly object for the order model / mongoose will autoselect _id if no spread operator
         // ! with ._doc just get really access to the data and not to the bunch of metadata
-
         // * PLEASE REFERENCE TO ORDER MODEL => productitem
         return { quantity: i.quantity, productData: { ...i.productId._doc } };
       });
       const order = new Order({
-        // needs to get products/ userData and
-        // * USERDATA
+        // * USERDATA & Products
         user: {
           email: req.user.email,
           userId: req.user,
         },
         // * PRODUCTS ARRAY
-        // [{quantity, productId}]
+        // [{quantity, productData}]
         products: products,
       });
       order.save();

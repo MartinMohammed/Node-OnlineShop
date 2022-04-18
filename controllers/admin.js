@@ -209,9 +209,9 @@ exports.postEditProduct = (req, res, next) => {
     });
 };
 
-exports.postDeleteProduct = (req, res, next) => {
+exports.deleteProduct = (req, res, next) => {
   const loggedInUser = req.session.user;
-  const productId = req.body.productId;
+  const productId = req.params.productId;
   // ----------- RACE CONDITION => Where deleteOne is earlier finish than finding ----------
   Product.findById(productId)
     .then((product) => {
@@ -226,12 +226,15 @@ exports.postDeleteProduct = (req, res, next) => {
       return Product.deleteOne({ _id: productId, userId: loggedInUser._id });
     })
     .then(() => {
-      res.redirect("/admin/products");
+      // For .json responses status code automatically set to 200
+      res.status(200).json({
+        message: "Product was successful deleted from the database!",
+      });
     })
     .catch((err) => {
-      const error = new Error(err);
-      error.httpStatusCode = 500;
-      return next(error);
+      res.status(500).json({
+        message: "Deleting product from database failed.",
+      });
     });
 };
 
