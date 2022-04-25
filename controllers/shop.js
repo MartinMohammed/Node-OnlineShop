@@ -13,7 +13,7 @@ const Product = require("../models/product");
 const Order = require("../models/order");
 
 // Constants
-const ITEMS_PER_PAGE = 2;
+const ITEMS_PER_PAGE = 4;
 
 exports.getHomepage = (req, res, next) => {
   //*  Get the information which page we are
@@ -58,6 +58,7 @@ exports.getHomepage = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
+// ---------------------------- PRODUCTS --------------------------
 
 exports.getProducts = (req, res, next) => {
   const page = Number(req.query.page) || 1;
@@ -107,6 +108,7 @@ exports.getProduct = (req, res, next) => {
     })
     .catch((err) => console.log(err));
 };
+// ---------------------------- CART & ORDERS --------------------------
 
 exports.getCart = (req, res, next) => {
   // RETURN THE CART OF THE GIVEN USER
@@ -154,21 +156,7 @@ exports.postCartDeleteItem = (req, res, next) => {
     .catch((err) => console.log(err));
 };
 
-// GET THE ORDERS FROM THE CURRENT ACTIVE USER => SESSION
-exports.getOrders = (req, res, next) => {
-  // nested fields => path
-  Order.find({ "user.userId": req.session.user._id })
-    .then((orders) => {
-      res.render("shop/orders", {
-        path: "/orders",
-        pageTitle: "Your Orders",
-        orders,
-      });
-    })
-    .catch((err) => console.log(err));
-};
-
-// ------------------- CHECKOUT ----------------
+// ---------------------------- CHECKOUT --------------------------
 exports.getCheckout = (req, res, next) => {
   // block scope
   let products;
@@ -186,14 +174,14 @@ exports.getCheckout = (req, res, next) => {
       // ------------ STRIPE SESSION ---------------
       //  ! Our customer will use our public key & we create for them a Stripe Session where they checkout
       /* ! stipeCheckoutSession configuration
-        - payment_method_types: allows payment methods such as credit card
-        - line_Items: [{name, description, amount(in cents), currency, quantity}] : Product Data stripe needs to make charges (process the payment)
-          checkout Items 
-        - 
-        - success_url & cancel_url:
-          * URLS stripe will redirect the user once the transaciton was completed or failed
-          * http or https || the ipadress / domain of the host deployed it onto
-      */
+    - payment_method_types: allows payment methods such as credit card
+    - line_Items: [{name, description, amount(in cents), currency, quantity}] : Product Data stripe needs to make charges (process the payment)
+    checkout Items 
+    - 
+    - success_url & cancel_url:
+    * URLS stripe will redirect the user once the transaciton was completed or failed
+    * http or https || the ipadress / domain of the host deployed it onto
+    */
       return stripe.checkout.sessions.create({
         payment_method_types: ["card"],
         line_items: products.map((p) => {
@@ -263,7 +251,21 @@ exports.getCheckoutSuccess = (req, res, next) => {
     .catch((err) => next(err));
 };
 
-// ------------------- ORDER INVOICES -------------
+// ---------------------------- ORDERS --------------------------
+// GET THE ORDERS FROM THE CURRENT ACTIVE USER => SESSION
+exports.getOrders = (req, res, next) => {
+  // nested fields => path
+  Order.find({ "user.userId": req.session.user._id })
+    .then((orders) => {
+      res.render("shop/orders", {
+        path: "/orders",
+        pageTitle: "Your Orders",
+        orders,
+      });
+    })
+    .catch((err) => console.log(err));
+};
+
 // * /orders/order._id page refer to this
 exports.getInvoice = (req, res, next) => {
   const orderId = req.params.orderId;

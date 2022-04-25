@@ -1,8 +1,6 @@
 const path = require("path");
-const cors = require("cors");
 
 const express = require("express");
-const handlebars = require("express-handlebars");
 const session = require("express-session");
 const mongoose = require("mongoose");
 const MongoDBStore = require("connect-mongodb-session")(session);
@@ -21,11 +19,9 @@ const errorsController = require("./controllers/errors");
 // CUSTOM MIDDLEWARE
 const haveActiveSession = require("./middleware/have-activeSession");
 const setLocals = require("./middleware/set-locals");
-const multerMiddleware = require("./middleware/multerConfig");
 
 // * ---------------------------- USING MONGODB ------------------------
 const mongooseConnect = require("./util/database").mongooseConnect;
-const User = require("./models/user");
 const multerConfig = require("./middleware/multerConfig");
 
 // MONGO DATABASE CREDENTIALS

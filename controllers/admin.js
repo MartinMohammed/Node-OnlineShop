@@ -8,7 +8,7 @@ const fileHelper = require("../util/fileHelper.js");
 // Models
 const Product = require("../models/product");
 
-// ------------------- ADD PRODUCT ---------------
+// ---------------------------- PRODUCTS --------------------------
 exports.getAddProduct = (req, res, next) => {
   // WORKING ON ROUTE PROTECTION - RESTRICT THE ACCESS OF THE USER
   // ! express-session - MIDDLEWARE !
@@ -110,7 +110,6 @@ exports.postAddProduct = (req, res, next) => {
     });
 };
 
-// ------------------- EDIT PRODUCT -------------------
 // RENDER THE ADMIN: ONLY ONE PRODUCT WITH ITS DATA
 exports.getEditProduct = (req, res, next) => {
   const loggedInUser = req.session.user;
