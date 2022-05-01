@@ -134,3 +134,10 @@ dist
 workspace.code-workspace
 .prettierignore
 .vscode 
+
+# local development ssl 
+server.key 
+server.cert
+
+
+nodemon.json

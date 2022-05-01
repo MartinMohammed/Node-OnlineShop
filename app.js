@@ -1,17 +1,43 @@
 const path = require("path");
-
 const express = require("express");
 const session = require("express-session");
-const mongoose = require("mongoose");
+const fs = require("fs");
 const MongoDBStore = require("connect-mongodb-session")(session);
 const csrf = require("csurf");
 const flash = require("connect-flash");
 const bodyParser = require("body-parser");
+// secure headers for responses
+const helmet = require("helmet");
+// asset compression
+const compression = require("compression");
+// request loggin
+const morgan = require("morgan");
+const https = require("https");
+
+// our http server
+const app = express();
+
+// // block code execution - preloading data - private key file /
+// // certificate which contains the public key
+// const privateKey = fs.readFileSync("./server.key");
+// const certificate = fs.readFileSync("./server.cert");
 
 // IMPORT ROUTES
 const adminRoutes = require("./routes/admin");
 const shopRoutes = require("./routes/shop");
 const authRoutes = require("./routes/auth");
+
+// appending stream data into the file
+const accessLogStream = fs.createWriteStream(
+  path.join(__dirname, "access.log"),
+  { flags: "a" }
+);
+
+// ADD HELMET MIDDLEWARE WHICH SETS FOR US HEADERS FOR SECURITY
+app.use(helmet());
+app.use(compression());
+// define which data is formated and how it is formatted
+app.use(morgan("combined", { stream: accessLogStream }));
 
 // IMPORT CONTROLLERS
 const errorsController = require("./controllers/errors");
@@ -25,10 +51,13 @@ const mongooseConnect = require("./util/database").mongooseConnect;
 const multerConfig = require("./middleware/multerConfig");
 
 // MONGO DATABASE CREDENTIALS
-const { MONGO_DATABASE_PASSWORD, MONGO_DATABASE_USERNAME } = process.env;
-const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/shop?retryWrites=true&w=majority`;
-
-const app = express();
+const {
+  MONGO_DATABASE_PASSWORD,
+  MONGO_DATABASE_USERNAME,
+  MONGO_DATABASE_NAME,
+  PORT,
+} = process.env;
+const MONGO_URI = `mongodb+srv://${MONGO_DATABASE_USERNAME}:${MONGO_DATABASE_PASSWORD}@cluster0.pqvdc.mongodb.net/${MONGO_DATABASE_NAME}?retryWrites=true&w=majority`;
 
 // * INITIALIZE NEW MONGO DB STORE FOR SESSIONS / use same database: shop
 const sessionStore = new MongoDBStore({
@@ -152,5 +181,15 @@ mongooseConnect(() => {
   //     user.save();
   //   }
   // });
-  app.listen(3000);
+
+  // // create a https server - configuration & request handler (our express application)
+  // https
+  //   .createServer(
+  //     {
+  //       key: privateKey,
+  //       cert: certificate,
+  //     },
+  app
+    // )
+    .listen(PORT || 3000);
 });
