@@ -1,5 +1,8 @@
 # A nodejs based Online Shop.
 
+Deployed on Heroku: 
+https://node-app-martin.herokuapp.com/
+
 Topics: Authentication, authorization, validation mongo database connection, template engine (ejs), cookies, sessions, multi-file upload, generate pdf on the fly. 
 
 ## Previews
