@@ -5,6 +5,9 @@ https://node-app-martin.herokuapp.com/
 
 Topics: Authentication, authorization, validation mongo database connection, template engine (ejs), cookies, sessions, multi-file upload, generate pdf on the fly. 
 
+## IMPORTANT NOTE: 
+Checkout process with **Stripe** is disabled! The neccessary API key is deactivated otherwise it would work like a usual checkout proccess in a common online shop.
+
 ## Previews
 
 ### Products:
